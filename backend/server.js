@@ -22,7 +22,7 @@ app.use((req, res, next) => {
 });
 
 // MongoDB setup
-// const url = 'mongodb+srv://02kmtellez:COP4331@largeproject.rttsyvo.mongodb.net/'
+// const url = 'mongodb+srv:'
 const client = new MongoClient(url);
 
 // Connect to MongoDB before starting the server
