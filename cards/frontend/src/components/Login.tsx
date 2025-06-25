@@ -1,5 +1,17 @@
 import React, { useState } from 'react';
 
+const app_name = 'group26.xyz';
+function buildPath(route:string) : string
+{
+if (process.env.NODE_ENV != 'development')
+{
+return 'http://' + app_name + ':5001/' + route;
+}
+else
+{
+return 'http://localhost:5001/' + route;
+}
+}
 
 function Login()
 {
@@ -14,7 +26,7 @@ function Login()
         var js = JSON.stringify(obj);
             try
             {
-                const response = await fetch('http://localhost:5001/api/login',
+                const response = await fetch(buildPath('api/login'),
                     {method:'POST',body:js,headers:{'Content-Type':
                     'application/json'}});
                 var res = JSON.parse(await response.text());

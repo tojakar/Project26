@@ -1,4 +1,17 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+
+const app_name = 'group26.xyz';
+function buildPath(route:string) : string
+{
+if (process.env.NODE_ENV != 'development')
+{
+return 'http://' + app_name + ':5001/' + route;
+}
+else
+{
+return 'http://localhost:5001/' + route;
+}
+}
 
 function CardUI()
 {
@@ -27,11 +40,9 @@ function CardUI()
         let obj = { userId: userId, card: card };
         let js = JSON.stringify(obj);
         try {
-            const response = await fetch('http://localhost:5001/api/addcard', {
-                method: 'POST',
-                body: js,
-                headers: { 'Content-Type': 'application/json' }
-            });
+            const response = await fetch(buildPath('api/addCard'),
+                {method:'POST',body:js,headers:{'Content-Type':
+                'application/json'}});
             let res = await response.json();
             if (res.error.length > 0) {
                 setMessage("API Error: " + res.error);
@@ -48,11 +59,10 @@ function CardUI()
         let obj = { userId: userId, search: search };
         let js = JSON.stringify(obj);
         try {
-            const response = await fetch('http://localhost:5001/api/searchcards', {
-                method: 'POST',
-                body: js,
-                headers: { 'Content-Type': 'application/json' }
-            });
+            const response = await fetch(buildPath('api/searchCards'),
+                {method:'POST',body:js,headers:{'Content-Type':
+                'application/json'}
+        });
             let res = await response.json();
             let _results = res.results;
             let resultText = '';
