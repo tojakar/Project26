@@ -24,7 +24,7 @@ function Login() {
       try {
         const decoded: any = jwtDecode(accessToken);
 
-        const userId = decoded.iat; // change to `decoded.userId` if available
+        const userId = decoded.userId;
         const firstName = decoded.firstName;
         const lastName = decoded.lastName;
 

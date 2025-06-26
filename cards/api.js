@@ -28,18 +28,19 @@ exports.setApp = function ( app, client )
         {
         console.log(e.message);
         }
-        const newCard = {Card:card,UserId:userId};
+        const newCard = new Card({ Card: card, UserId: userId });
         var error = '';
         try
         {
-        const db = client.db();
-        const result = db.collection('Cards').insertOne(newCard);
+            // const db = client.db();
+            // const result = db.collection('Cards').insertOne(newCard);
+            newCard.save();
         }
-        catch(e)
+        catch (e)
         {
-        error = e.toString();
+            error = e.toString();
         }
-        var refreshedToken = null;
+            var refreshedToken = null;
         try
         {
         refreshedToken = token.refresh(jwtToken);
@@ -59,11 +60,11 @@ exports.setApp = function ( app, client )
         // incoming: login, password
         // outgoing: id, firstName, lastName, error
         var error = '';
-        const { login, password } = req.body;
-        const db = client.db('COP4331Cards');
-        const results = await
-        db.collection('Users').find({Login:login,Password:password}).toArray
-        ();
+       const { login, password } = req.body;
+        // const db = client.db();
+        // const results = await db.collection('Users').find({Login:login,Password:password}).toArray();
+        const results = await User.find({ Login: login, Password: password });
+    
         var id = -1;
         var fn = '';
         var ln = '';
@@ -109,9 +110,7 @@ exports.setApp = function ( app, client )
         console.log(e.message);
         }
         var _search = search.trim();
-        const db = client.db();
-        const results = await db.collection('Cards').find({"Card":{$regex:_search+'.*',
-        $options:'i'}}).toArray();
+        const results = await Card.find({ "Card": { $regex: _search + '.*', $options: 'r' } });
         var _ret = [];
         for( var i=0; i<results.length; i++ )
         {
