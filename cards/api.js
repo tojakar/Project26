@@ -90,6 +90,32 @@ exports.setApp = function ( app, client )
         }
         res.status(200).json(ret);
     });
+
+    app.post('/api/register', async (req, res) => {
+    const { userId, firstName, lastName, login, password } = req.body;
+
+    try {
+        // Check if login already exists
+        const existing = await User.findOne({ Login: login });
+        if (existing) {
+        return res.status(400).json({ error: 'Login already exists' });
+        }
+
+        const newUser = new User({
+        UserId: userId,
+        FirstName: firstName,
+        LastName: lastName,
+        Login: login,
+        Password: password  // NOT encrypted
+        });
+
+        await newUser.save();
+        res.status(200).json({ message: 'User created successfully', user: newUser });
+
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
     
     app.post('/api/searchcards', async (req, res, next) =>{
         // incoming: userId, search

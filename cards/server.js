@@ -30,5 +30,5 @@ mongoose.connect(url)
 const api = require('./api.js');
 api.setApp(app, mongoose);
 
-app.listen(5000);
-console.log("Server started on port 5000");
+app.listen(5001);
+console.log("Server started on port 5001");
