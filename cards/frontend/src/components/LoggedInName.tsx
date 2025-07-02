@@ -8,7 +8,7 @@ window.location.href = '/';
 };
 return(
 <div id="loggedInDiv">
-<span id="userName">Logged In As John Doe </span><br />
+<span id="userName">Logged In As </span><br />
 <button type="button" id="logoutButton" className="buttons"
 onClick={doLogout}> Log Out </button>
 </div>

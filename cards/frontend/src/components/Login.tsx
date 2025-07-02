@@ -6,12 +6,12 @@ import { jwtDecode } from 'jwt-decode';
 
 function Login() {
   const [message, setMessage] = useState('');
-  const [loginName, setLoginName] = React.useState('');
+  const [email, setLoginName] = React.useState('');
   const [loginPassword, setPassword] = React.useState('');
 
   async function doLogin(event: any): Promise<void> {
     event.preventDefault();
-    const obj = { login: loginName, password: loginPassword };
+    const obj = { login: email, password: loginPassword };
 
     try {
       const response = await axios.post(buildPath('api/login'), obj, {
@@ -56,10 +56,10 @@ function Login() {
 
   return (
     <div id="loginDiv">
-      <span id="inner-title">PLEASE LOG IN</span><br />
-      Login: <input type="text" id="loginName" placeholder="Username" onChange={handleSetLoginName} /><br />
+      <span id="inner-title">Log in</span><br />
+      Email: <input type="text" id="loginName" placeholder="Email" onChange={handleSetLoginName} /><br />
       Password: <input type="password" id="loginPassword" placeholder="Password" onChange={handleSetPassword} />
-      <input type="submit" id="loginButton" className="buttons" value="Do It" onClick={doLogin} />
+      <button type="button" id="loginButton" className="buttons" onClick={doLogin}>  Log In </button>
       <span id="loginResult">{message}</span>
     </div>
   );
