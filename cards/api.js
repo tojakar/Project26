@@ -4,6 +4,11 @@ require('mongodb');
 const User = require("./models/user.js");
 //load card model
 const Card = require("./models/card.js");
+
+//hashing stuff
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
+
 exports.setApp = function ( app, client )
 {
     const token = require('./createJWT.js');
@@ -54,68 +59,81 @@ exports.setApp = function ( app, client )
     });
 
 
-
+    // incoming: email, password
+    // outgoing: id, firstName, lastName, error
     app.post('/api/login', async (req, res, next) =>
     {
-        // incoming: login, password
-        // outgoing: id, firstName, lastName, error
+
         var error = '';
-       const { login, password } = req.body;
-        // const db = client.db();
-        // const results = await db.collection('Users').find({Login:login,Password:password}).toArray();
-        const results = await User.find({ Login: login, Password: password });
-    
+        const { email, password } = req.body;
+        const results = await User.find({email: email});
+
+        //Checks if email was valid
+        if( results.length === 0 )
+        {   
+            res.status(200).json({error:"Email/Password incorrect"});
+            return;
+        }
+
+        //Checks if the password matches
+        const isMatch = await bcrypt.compare(password, results[0].password);
+        if (!isMatch) {
+            res.status(200).json({ error: "Email/Password incorrect" });
+            return;
+        }
+
         var id = -1;
         var fn = '';
         var ln = '';
         var ret;
-        if( results.length > 0 )
-        {
-        id = results[0].UserId;
-        fn = results[0].FirstName;
-        ln = results[0].LastName;
+        
+        id = results[0]._id;
+        fn = results[0].firstName;
+        ln = results[0].lastName;
         try
         {
-        const token = require("./createJWT.js");
-        ret = token.createToken( fn, ln, id );
+            const token = require("./createJWT.js");
+            ret = token.createToken( fn, ln, id );
         }
         catch(e)
         {
-        ret = {error:e.message};
+            ret = {error:e.message};
         }
-        }
-        else
-        {
-        ret = {error:"Login/Password incorrect"};
-        }
+        
         res.status(200).json(ret);
     });
 
+    // incoming: firstName, lastName, email, password
+    // outgoing: message, user, error
     app.post('/api/register', async (req, res) => {
-    const { userId, firstName, lastName, login, password } = req.body;
 
-    try {
-        // Check if login already exists
-        const existing = await User.findOne({ Login: login });
-        if (existing) {
-        return res.status(400).json({ error: 'Login already exists' });
+        const { firstName, lastName, email, password } = req.body;
+
+        try {
+            if(!email || !password || !firstName || !lastName) {
+                return res.status(400).json({ error: 'All fields are required' });
+            }
+            // Check if email already exists
+            const existing = await User.findOne({ email: email });
+            if (existing) {
+                return res.status(400).json({ error: 'Email already exists' });
+            }
+            const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+            const newUser = new User({
+                firstName: firstName,
+                lastName: lastName,
+                email: email,
+                password: hashedPassword  //hashed password
+            });
+
+            await newUser.save();
+            res.status(200).json({ message: 'User created successfully', user: newUser });
+
+        } catch (err) {
+            res.status(500).json({ error: err.message });
         }
-
-        const newUser = new User({
-        UserId: userId,
-        FirstName: firstName,
-        LastName: lastName,
-        Login: login,
-        Password: password  // NOT encrypted
-        });
-
-        await newUser.save();
-        res.status(200).json({ message: 'User created successfully', user: newUser });
-
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
+    });
     
     app.post('/api/searchcards', async (req, res, next) =>{
         // incoming: userId, search
