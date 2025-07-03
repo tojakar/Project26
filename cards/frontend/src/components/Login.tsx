@@ -5,7 +5,6 @@ import { storeToken } from '../tokenStorage';
 import { jwtDecode } from 'jwt-decode';
 import { useNavigate } from 'react-router-dom';
 
-
 function Login() {
   const [message, setMessage] = useState('');
   const [email, setEmail] = React.useState('');
@@ -63,8 +62,9 @@ function Login() {
     setPassword(e.target.value);
   }
 
-  return (
-    <div id="loginDiv" style={{color: 'black' }}>
+ return (
+  <div className="background-container">
+    <div id="ButtonDiv" className="form">
       <span id="inner-title">Log in</span><br />
       Email: <input type="text" id="loginName" placeholder="Email" onChange={handleSetEmail} /><br />
       Password: <input type="password" id="loginPassword" placeholder="Password" onChange={handleSetPassword} />
@@ -73,7 +73,8 @@ function Login() {
       <button type="button" id="registerButton" className="buttons" onClick={doRegister}> No account? Register Here</button>
       <span id="loginResult">{message}</span>
     </div>
-  );
+  </div>
+);
 }
 
 export default Login;

@@ -68,7 +68,9 @@ function CardUI() {
   }
 
   return (
-    <div id="cardUIDiv">
+       
+    <div className="background-container">
+    <div id="ButtonDiv" className="form">
       <br />
       Search: <input type="text" id="searchText" placeholder="Card To Search For" onChange={handleSearchTextChange} />
       <button type="button" id="searchCardButton" className="buttons" onClick={searchCard}>Search Card</button><br />
@@ -78,6 +80,7 @@ function CardUI() {
       Add: <input type="text" id="cardText" placeholder="Card To Add" onChange={handleCardTextChange} />
       <button type="button" id="addCardButton" className="buttons" onClick={addCard}>Add Card</button><br />
       <span id="cardAddResult">{message}</span>
+    </div>
     </div>
   );
 }

@@ -87,7 +87,8 @@ function Register() {
   }
 
   return (
-    <div id="registerDiv" style={{ color: 'black' }}>
+    <div className="background-container">
+    <div id="ButtonDiv" className="form">
       <span id="inner-title">Register</span><br />
       First Name: <input type="text" id="firstName" placeholder="First Name" onChange={handleSetFirstName} /><br />
       Last Name: <input type="text" id="lastName" placeholder="Last Name" onChange={handleSetLastName} /><br />
@@ -99,6 +100,7 @@ function Register() {
       <button type="button" id="registerButton" className="buttons" onClick={doRegister}>Register</button>
       <button type="button" id="loginButton" className="buttons" onClick={doLogin}>Already have an account? Log In</button>
       <span id="registerResult">{message}</span>
+    </div>
     </div>
   );
 }

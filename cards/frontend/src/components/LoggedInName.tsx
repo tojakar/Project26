@@ -10,7 +10,7 @@ return(
 <div id="loggedInDiv">
 <span id="userName">Logged In As </span><br />
 <button type="button" id="logoutButton" className="buttons"
-onClick={doLogout}> Log Out </button>
+onClick={doLogout} style={{float: 'right'}}> Log Out </button>
 </div>
 );
 };
