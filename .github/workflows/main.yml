@@ -61,6 +61,12 @@ jobs:
             npm install
 
             echo "🚀 Restarting backend..."
-            pm2 restart server || pm2 start server.js --name server
+            if pm2 describe server > /dev/null; then
+              echo "🔄 Restarting existing server process..."
+              pm2 restart server
+            else
+              echo "🆕 Starting new server process..."
+              pm2 start server.js --name server
+            fi
 
             echo "✅ Deployment complete!"
