@@ -1,38 +1,53 @@
-name: Manual Full Deploy to Server
+name: Manual Deploy Frontend + Backend
 
 on:
-  workflow_dispatch:  # 👈 enables manual trigger from GitHub UI
+  workflow_dispatch:  # ✅ Allows manual triggering from GitHub Actions UI
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
+      # Step 1: Checkout the repo code
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Deploy via SSH (Force Sync)
-        uses: appleboy/ssh-action@master
+      # Step 2: Build frontend (assumes Vite)
+      - name: Install and build frontend
+        run: |
+          cd frontend
+          npm install
+          npm run build
+
+      # Step 3: Upload built frontend to server (/var/www/html)
+      - name: Upload frontend to server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "frontend/dist/*"   # Use build/* if using CRA
+          target: "/var/www/html"
+          strip_components: 1
+
+      # Step 4: SSH into backend server and deploy backend
+      - name: Deploy backend via SSH
+        uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            cd /var/www/html
+            cd /var/www/cards-server
 
-            echo "🚨 FORCE syncing server code with GitHub..."
+            echo "📥 Fetching latest backend code..."
             git fetch --all
             git reset --hard origin/main
 
-            echo "📦 Installing backend dependencies"
+            echo "📦 Installing backend dependencies..."
             npm install
 
-            echo "🚀 Restarting backend"
-            pm2 restart server || pm2 start index.js --name server
+            echo "🚀 Restarting backend with PM2..."
+            pm2 restart server || pm2 start server.js --name server
 
-            echo "🌐 Building frontend"
-            cd frontend
-            npm install
-            npm run build
-
-            echo "✅ Manual Deploy Complete"
+            echo "✅ Manual deploy complete"
