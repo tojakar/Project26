@@ -21,7 +21,7 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             # go to where the repo is already cloned on the server
-            cd /var/www/cards  # 🛠️ adjust this to your actual server path if different
+            cd /var/www/html  # 🛠️ adjust this to your actual server path if different
 
             echo "📥 Pulling latest code"
             git pull origin main
