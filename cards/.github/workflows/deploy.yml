@@ -1,41 +1,55 @@
-name: Auto Deploy MERN Stack to Server
+name: Deploy Frontend and Backend to Server
 
 on:
   push:
     branches:
-      - main  # Or your deployment branch
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # Pull latest code from GitHub
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: SSH & Deploy to Server
-        uses: appleboy/ssh-action@master
+      # FRONTEND: Install and build frontend (Vite)
+      - name: Install and build frontend
+        run: |
+          cd frontend
+          npm install
+          npm run build
+
+      # FRONTEND: Upload built files to /var/www/html
+      - name: Upload frontend build to server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "frontend/dist/*"         # use frontend/build/* if using CRA
+          target: "/var/www/html"
+          strip_components: 1
+
+      # BACKEND: Pull backend, install deps, and restart with PM2
+      - name: Deploy backend via SSH
+        uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            # go to where the repo is already cloned on the server
-            cd /var/www/cards  # 🛠️ adjust this to your actual server path if different
+            cd /var/www/cards-server
 
-            echo "📥 Pulling latest code"
-            git pull origin main
+            echo "📥 Pulling latest backend code"
+            git fetch --all
+            git reset --hard origin/main
 
             echo "📦 Installing backend dependencies"
             npm install
 
-            echo "🔁 Restarting backend with PM2"
-            pm2 restart server || pm2 start index.js --name server
+            echo "🚀 Restarting backend with PM2"
+            pm2 restart server || pm2 start server.js --name server
 
-            echo "📦 Installing frontend dependencies"
-            cd frontend
-            npm install
-            npm run build
-            cd ..
-
-            echo "✅ Deploy completed"
+            echo "✅ Backend deployed"
