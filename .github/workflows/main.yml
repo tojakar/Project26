@@ -1,55 +1,55 @@
-name: Deploy Frontend and Backend to Server
+name: Auto Deploy Frontend + Backend
 
 on:
   push:
     branches:
-      - main
+      - main  # or change to the branch you want to auto-deploy from
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # Pull latest code from GitHub
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # FRONTEND: Install and build frontend (Vite)
       - name: Install and build frontend
         run: |
-          cd frontend
+          cd cards/frontend
           npm install
           npm run build
 
-      # FRONTEND: Upload built files to /var/www/html
-      - name: Upload frontend build to server
+      - name: Upload frontend to /tmp on server
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "frontend/dist/*"         # use frontend/build/* if using CRA
-          target: "/var/www/html"
+          source: "cards/frontend/dist/**"
+          target: "/tmp/frontend-upload"
           strip_components: 1
+          tar: true
 
-      # BACKEND: Pull backend, install deps, and restart with PM2
-      - name: Deploy backend via SSH
+      - name: Deploy backend + move frontend into web dir
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            cd /var/www/cards-server
+            echo "🧹 Cleaning up old frontend..."
+            rm -rf /var/www/html/*
 
-            echo "📥 Pulling latest backend code"
+            echo "📦 Moving frontend from /tmp to /var/www/html..."
+            mv /tmp/frontend-upload/* /var/www/html/
+
+            echo "📥 Updating backend..."
+            cd /var/cardsServer
             git fetch --all
             git reset --hard origin/main
-
-            echo "📦 Installing backend dependencies"
             npm install
 
-            echo "🚀 Restarting backend with PM2"
+            echo "🚀 Restarting backend..."
             pm2 restart server || pm2 start server.js --name server
 
-            echo "✅ Backend deployed"
+            echo "✅ Deployment complete!"
