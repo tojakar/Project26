@@ -42,7 +42,7 @@ jobs:
             mv /tmp/frontend-upload/* /var/www/html/
 
             echo "📥 Updating backend..."
-            cd /var/www/cardsServer
+            cd /var/cardsServer
             git fetch --all
             git reset --hard origin/main
             npm install
