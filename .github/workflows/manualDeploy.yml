@@ -23,9 +23,9 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "cards/frontend/dist/**"
+          source: "cards/frontend/dist/*"
           target: "/tmp/frontend-upload"
-          strip_components: 1
+          strip_components: 0
           tar: true
 
       - name: Deploy backend + move frontend into web dir
