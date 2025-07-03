@@ -6,12 +6,12 @@ import { jwtDecode } from 'jwt-decode';
 
 function Login() {
   const [message, setMessage] = useState('');
-  const [email, setLoginName] = React.useState('');
+  const [email, setEmail] = React.useState('');
   const [loginPassword, setPassword] = React.useState('');
 
   async function doLogin(event: any): Promise<void> {
     event.preventDefault();
-    const obj = { login: email, password: loginPassword };
+    const obj = { email: email, password: loginPassword };
 
     try {
       const response = await axios.post(buildPath('api/login'), obj, {
@@ -24,7 +24,7 @@ function Login() {
       try {
         const decoded: any = jwtDecode(accessToken);
 
-        const userId = decoded.userId;
+        const userId = decoded._id;
         const firstName = decoded.firstName;
         const lastName = decoded.lastName;
 
@@ -46,8 +46,8 @@ function Login() {
     }
   }
 
-  function handleSetLoginName(e: any): void {
-    setLoginName(e.target.value);
+  function handleSetEmail(e: any): void {
+    setEmail(e.target.value);
   }
 
   function handleSetPassword(e: any): void {
@@ -57,7 +57,7 @@ function Login() {
   return (
     <div id="loginDiv">
       <span id="inner-title">Log in</span><br />
-      Email: <input type="text" id="loginName" placeholder="Email" onChange={handleSetLoginName} /><br />
+      Email: <input type="text" id="loginName" placeholder="Email" onChange={handleSetEmail} /><br />
       Password: <input type="password" id="loginPassword" placeholder="Password" onChange={handleSetPassword} />
       <button type="button" id="loginButton" className="buttons" onClick={doLogin}>  Log In </button>
       <span id="loginResult">{message}</span>
