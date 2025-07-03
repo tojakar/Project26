@@ -1,4 +1,4 @@
-name: manualDeploy
+name: Auto Deploy Frontend + Backend
 
 on:
   push:

@@ -1,4 +1,4 @@
-name: Auto Deploy Frontend + Backend
+name: manual deploy
 
 on:
   workflow_dispatch:
