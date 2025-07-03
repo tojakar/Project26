@@ -1,2 +1,11 @@
-cards/.env
+# Ignore environment files
+.env
+**/.env
+
+# Ignore node_modules folders
 node_modules/
+**/node_modules/
+
+# Other common ignores
+.DS_Store
+dist/
