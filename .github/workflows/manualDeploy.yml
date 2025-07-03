@@ -18,7 +18,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            cd /var/www/cards
+            cd /var/www/html
 
             echo "🚨 FORCE syncing server code with GitHub..."
             git fetch --all
