@@ -1,39 +1,41 @@
-name: Deploy MERN App
+name: Auto Deploy MERN Stack to Server
+
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main  # Or your deployment branch
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Install Dependencies and Build Frontend
-        run: |
-          cd frontend
-          npm ci
-          npm run build
-
-      - name: Deploy Frontend via SCP
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.DROPLET_IP }}
-          username: ${{ secrets.DROPLET_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "frontend/dist/*"
-          target: "/var/www/html"
-
-      - name: Deploy Backend via SSH
+      - name: SSH & Deploy to Server
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.DROPLET_IP }}
-          username: ${{ secrets.DROPLET_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            cd /var/cardsServer
-            git pull
+            # go to where the repo is already cloned on the server
+            cd /var/www/cards  # 🛠️ adjust this to your actual server path if different
+
+            echo "📥 Pulling latest code"
+            git pull origin main
+
+            echo "📦 Installing backend dependencies"
             npm install
-            pm2 restart express-server
+
+            echo "🔁 Restarting backend with PM2"
+            pm2 restart server || pm2 start index.js --name server
+
+            echo "📦 Installing frontend dependencies"
+            cd frontend
+            npm install
+            npm run build
+            cd ..
+
+            echo "✅ Deploy completed"
