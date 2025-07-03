@@ -27,7 +27,7 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           source: "cards/frontend/dist/*"
           target: "/tmp/frontend-upload"
-          strip_components: 0
+          strip_components: 3
 
       - name: Deploy backend + move frontend into web dir
         uses: appleboy/ssh-action@v0.1.7
