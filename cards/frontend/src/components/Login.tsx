@@ -64,10 +64,11 @@ function Login() {
   }
 
   return (
-    <div id="loginDiv">
+    <div id="loginDiv" style={{color: 'black' }}>
       <span id="inner-title">Log in</span><br />
       Email: <input type="text" id="loginName" placeholder="Email" onChange={handleSetEmail} /><br />
       Password: <input type="password" id="loginPassword" placeholder="Password" onChange={handleSetPassword} />
+      <br />
       <button type="button" id="loginButton" className="buttons" onClick={doLogin}>  Log In </button>
       <button type="button" id="registerButton" className="buttons" onClick={doRegister}> No account? Register Here</button>
       <span id="loginResult">{message}</span>

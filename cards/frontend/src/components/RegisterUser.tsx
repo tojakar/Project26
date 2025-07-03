@@ -87,13 +87,15 @@ function Register() {
   }
 
   return (
-    <div id="registerDiv">
+    <div id="registerDiv" style={{ color: 'black' }}>
       <span id="inner-title">Register</span><br />
       First Name: <input type="text" id="firstName" placeholder="First Name" onChange={handleSetFirstName} /><br />
       Last Name: <input type="text" id="lastName" placeholder="Last Name" onChange={handleSetLastName} /><br />
       Email: <input type="text" id="registerEmail" placeholder="Email" onChange={handleSetEmail} /><br />
       Password: <input type="password" id="registerPassword" placeholder="Password" onChange={handleSetPassword} /><br />
       Confirm Password: <input type="password" id="confirmPassword" placeholder="Confirm Password" onChange={handleSetConfirmPassword} />
+      
+      <br />
       <button type="button" id="registerButton" className="buttons" onClick={doRegister}>Register</button>
       <button type="button" id="loginButton" className="buttons" onClick={doLogin}>Already have an account? Log In</button>
       <span id="registerResult">{message}</span>
