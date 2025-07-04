@@ -4,9 +4,12 @@ require('mongodb');
 const User = require("./models/user.js");
 //load card model
 const Card = require("./models/card.js");
+//load WaterFountain model
+const WaterFountain = require("./models/waterFountain.js");
 
 //hashing stuff
 const bcrypt = require('bcrypt');
+const waterFountain = require('./models/waterFountain.js');
 const saltRounds = 10;
 
 exports.setApp = function ( app, client )
@@ -25,7 +28,7 @@ exports.setApp = function ( app, client )
         if( token.isExpired(jwtToken))
         {
         var r = {error:'The JWT is no longer valid', jwtToken: ''};
-        res.status(200).json(r);
+        res.status(401).json(r);
         return;
         }
         }
@@ -71,14 +74,14 @@ exports.setApp = function ( app, client )
         //Checks if email was valid
         if( results.length === 0 )
         {   
-            res.status(200).json({error:"Email/Password incorrect"});
+            res.status(400).json({error:"Email/Password incorrect"});
             return;
         }
 
         //Checks if the password matches
         const isMatch = await bcrypt.compare(password, results[0].password);
         if (!isMatch) {
-            res.status(200).json({ error: "Email/Password incorrect" });
+            res.status(400).json({ error: "Email/Password incorrect" });
             return;
         }
 
@@ -145,7 +148,7 @@ exports.setApp = function ( app, client )
         if( token.isExpired(jwtToken))
         {
         var r = {error:'The JWT is no longer valid', jwtToken: ''};
-        res.status(200).json(r);
+        res.status(401).json(r);
         return;
         }
         }
@@ -172,5 +175,117 @@ exports.setApp = function ( app, client )
         var ret = { results:_ret, error: error, jwtToken: refreshedToken };
         res.status(200).json(ret);
     });
+
+    app.post('/api/addWaterFountain', async (req, res, next) =>
+    {
+        // incoming: name,description, xCoord, yCoord, filterLevel
+        // outgoing: error, s
+        const { name, description, xCoord, yCoord, filterLevel, rating, jwtToken } = req.body;
+        try{
+            if( token.isExpired(jwtToken)){
+                var r = {error:'The JWT is no longer valid', jwtToken: ''};
+                res.status(401).json(r);
+                return;
+            }
+        }
+        catch(e){
+            console.log(e.message);
+        }
+        const newWaterFountain = new waterFountain({name, description, xCoord, yCoord, filterLevel, rating});
+        var error = '';
+        var success = '';
+        try{
+            await newWaterFountain.save();
+            success = "Water fountain added successfully";
+        }
+        catch (e){
+            error = e.toString();
+        }
+        var refreshedToken = null;
+        try{
+            refreshedToken = token.refresh(jwtToken);
+        }
+        catch(e){
+            console.log(e.message);
+        }
+        var ret = { success: success, error: error, jwtToken: refreshedToken };
+        res.status(200).json(ret);
+    });
+
+    app.post('/api/deleteWaterFountain', async (req, res, next) =>
+    {
+        // incoming: id
+        // outgoing: error, success, jwtToken 
+        // id is the _id of the water fountain to delete
+        const { id, jwtToken } = req.body;
+        try{
+            if( token.isExpired(jwtToken)){
+                var r = {error:'The JWT is no longer valid', jwtToken: ''};
+                res.status(401).json(r);
+                return;
+            }
+        }
+        catch(e){
+            console.log(e.message);
+        }
+        var error = '';
+        var success = '';
+        try{
+            const deleted = await waterFountain.findByIdAndDelete(id); 
+            if (!deleted) {
+                error = "Water fountain not found";
+                res.status(404).json({ error: error, jwtToken: jwtToken });
+                return;
+            }
+            success = "Water fountain deleted successfully";
+        }
+        catch (e){
+            error = e.toString();
+        }
+        var refreshedToken = null;
+        try{
+            refreshedToken = token.refresh(jwtToken);
+        }
+        catch(e){
+            console.log(e.message);
+        }
+        var ret = { success: success, error: error, jwtToken: refreshedToken };
+        res.status(200).json(ret);
+    });
+
+    app.post('/api/searchWaterFountainByName', async (req, res, next) =>
+    {
+        // incoming: name
+        // outgoing: waterFountainsFound, error, success, jwtToken
+        const { name, jwtToken } = req.body;
+        try{
+            if( token.isExpired(jwtToken)){
+                var r = {error:'The JWT is no longer valid', jwtToken: ''};
+                res.status(401).json(r);
+                return;
+            }
+        }
+        catch(e){
+            console.log(e.message);
+        }
+        const waterFountainsFound = await waterFountain.find({name: {$regex: name + '.*', $options: 'i'}});
+        if( waterFountainsFound.length === 0 )
+        {
+            res.status(200).json({error: "No water fountains found with that name", jwtToken: jwtToken});
+            return;
+        }
+        
+        var refreshedToken = null;
+        try{
+            refreshedToken = token.refresh(jwtToken);
+        }
+        catch(e){
+            console.log(e.message);
+        }
+        success = `${waterFountainsFound.length} Water fountains found`;
+        var ret = {found:waterFountainsFound, success: success, jwtToken: refreshedToken };
+        res.status(200).json(ret);
+    });
+
 }
 
