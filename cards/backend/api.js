@@ -271,7 +271,7 @@ exports.setApp = function ( app, client )
         const waterFountainsFound = await waterFountain.find({name: {$regex: name + '.*', $options: 'i'}});
         if( waterFountainsFound.length === 0 )
         {
-            res.status(200).json({error: "No water fountains found with that name", jwtToken: jwtToken});
+            res.status(404).json({error: "No water fountains found with that name", jwtToken: jwtToken});
             return;
         }
         
@@ -286,6 +286,46 @@ exports.setApp = function ( app, client )
         var ret = {found:waterFountainsFound, success: success, jwtToken: refreshedToken };
         res.status(200).json(ret);
     });
+
+     app.post('/api/editWaterFountain', async (req, res, next) =>{
+        // incoming: id, editedFields, jwtToken
+        // outgoing: error, success, jwtToken
+        const { id, editedFields, jwtToken } = req.body;
+        try{
+            if( token.isExpired(jwtToken)){
+                var r = {error:'The JWT is no longer valid', jwtToken: ''};
+                res.status(401).json(r);
+                return;
+            }
+        }
+        catch(e){
+            console.log(e.message);
+        }
+        var error = '';
+        var success = '';
+        try{
+            const updatedWaterFountain = await waterFountain.findByIdAndUpdate(id, editedFields, { new: true });
+            if (!updatedWaterFountain) {
+                error = "Water fountain not found";
+                res.status(404).json({ error: error, jwtToken: jwtToken });
+                return;
+            }
+            success = "Water fountain updated successfully";
+        }
+        catch (e){
+            error = e.toString();
+        }
+        var refreshedToken = null;
+        try{
+            refreshedToken = token.refresh(jwtToken);
+        }
+        catch(e){
+            console.log(e.message);
+        }
+        var ret = {error: error, success: success, jwtToken: refreshedToken };
+        res.status(200).json(ret);
+    });
+
 
 }
 
