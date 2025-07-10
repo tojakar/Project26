@@ -1,11 +1,45 @@
-# Ignore environment files
-.env
-**/.env
-
-# Ignore node_modules folders
-node_modules/
+# Ignore all node_modules folders anywhere in the project
 **/node_modules/
 
-# Other common ignores
+# Ignore environment variable files in any subdirectory
+**/.env
+**/.env.*
+
+# Ignore log files everywhere
+**/*.log
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/pnpm-debug.log*
+
+# Ignore build/dist folders from frontend or backend
+**/build/
+**/dist/
+
+# OS and system files
 .DS_Store
-dist/
+Thumbs.db
+
+# IDE/editor folders
+**/.vscode/
+**/.idea/
+**/*.swp
+**/*.swo
+
+# Dependency lock files (optional, based on team conventions)
+**/package-lock.json
+**/yarn.lock
+**/pnpm-lock.yaml
+
+# PM2 runtime files (backend server)
+**/*.pid
+**/pids/
+**/logs/
+
+# Test coverage
+**/coverage/
+
+# Temp or upload dirs (e.g., for file uploads or temp data)
+**/tmp/
+**/temp/
+**/uploads/
