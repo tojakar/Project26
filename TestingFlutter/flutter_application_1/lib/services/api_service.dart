@@ -12,7 +12,7 @@ class ApiService {
       if (kIsWeb) {
         return 'http://localhost:5001/$route';
       } else {
-        return 'http://10.0.2.2:5001/$route';
+        return 'http://$appName:5001/$route'; // Use your actual server address
       }
     } else {
       return 'http://$appName:5001/$route';
