@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'SignUp_page.dart';
+import 'services/api_service.dart';
+import 'home_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -17,6 +19,7 @@ class _LoginPageState extends State<LoginPage> {
 
   bool _obscurePassword = true;
   String _errorMessage = '';
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -27,19 +30,52 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  void _handleLogin() {
+  void _handleLogin() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
     if (email.isEmpty || password.isEmpty) {
       setState(() => _errorMessage = 'Please enter both email and password.');
-    } else {
-      setState(() => _errorMessage = '');
-      print('Email: $email');
-      print('Password: $password');
+      return;
+    }
 
-      // Navigate or connect to API here
-      // Navigator.pushReplacementNamed(context, '/home');
+    setState(() {
+      _errorMessage = '';
+      _isLoading = true;
+    });
+
+    try {
+      print('Attempting login with email: $email'); // Debug print
+      
+      // Call API
+      final result = await ApiService.login(email: email, password: password);
+      
+      print('Login result: $result'); // Debug print
+      
+      if (result['success'] == true) {
+        // Save user data
+        await ApiService.saveUserData(
+          id: result['id'],
+          firstName: result['firstName'],
+          lastName: result['lastName'],
+          email: email,
+        );
+        
+        // Navigate to home
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HomePage()),
+          );
+        }
+      } else {
+        setState(() => _errorMessage = result['message'] ?? 'Login failed');
+      }
+    } catch (e) {
+      print('Login error: $e'); // Debug print
+      setState(() => _errorMessage = 'Network error: ${e.toString()}');
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
@@ -70,6 +106,7 @@ class _LoginPageState extends State<LoginPage> {
               onChanged: (_) => setState(() {}),
               onTap: () => setState(() {}),
             ),
+
             const SizedBox(height: 20),
 
             // Password TextField
@@ -94,6 +131,7 @@ class _LoginPageState extends State<LoginPage> {
 
             const SizedBox(height: 16),
 
+            // Error message display
             if (_errorMessage.isNotEmpty)
               Text(
                 _errorMessage,
@@ -102,11 +140,14 @@ class _LoginPageState extends State<LoginPage> {
 
             const SizedBox(height: 24),
 
+            // Login Button
             ElevatedButton(
-              onPressed: _handleLogin,
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                child: Text('Login', style: TextStyle(fontSize: 16)),
+              onPressed: _isLoading ? null : _handleLogin,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                child: _isLoading 
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : const Text('Login', style: TextStyle(fontSize: 16)),
               ),
             ),
 
@@ -119,6 +160,7 @@ class _LoginPageState extends State<LoginPage> {
 
             const SizedBox(height: 32),
 
+            // Sign Up Button
             ElevatedButton(
               onPressed: () {
                   Navigator.push(
