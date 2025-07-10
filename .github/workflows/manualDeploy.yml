@@ -1,0 +1,70 @@
+name: manual deploy
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install and build frontend
+        run: |
+          cd cards/frontend
+          npm install
+          npm run build
+
+      - name: Upload frontend to /tmp on server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "cards/frontend/dist/*"
+          target: "/tmp/frontend-upload"
+          strip_components: 3
+
+      - name: Upload backend to /tmp on server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "cards/backend/**"
+          target: "/tmp/backend-upload"
+          strip_components: 2
+
+      - name: Deploy backend + move frontend into web dir
+        uses: appleboy/ssh-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            echo "🧹 Cleaning up old frontend..."
+            rm -rf /var/www/html/*
+            echo "📦 Moving frontend to web root..."
+            mv /tmp/frontend-upload/* /var/www/html/
+
+            echo "🧹 Cleaning up old backend..."
+            rm -rf /var/cardsServer/*
+            echo "📦 Moving backend to server dir..."
+            mv /tmp/backend-upload/* /var/cardsServer/
+
+            echo "📥 Installing backend dependencies..."
+            cd /var/cardsServer
+            npm install
+
+            echo "🚀 Restarting backend..."
+            if pm2 describe server > /dev/null; then
+              echo "🔄 Restarting existing server process..."
+              pm2 restart server
+            else
+              echo "🆕 Starting new server process..."
+              pm2 start server.js --name server
+            fi
+
+            echo "✅ Deployment complete!"
