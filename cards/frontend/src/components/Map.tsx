@@ -52,8 +52,7 @@ const Map: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<any>(null);
   const [leafletLoaded, setLeafletLoaded] = useState(false);
-  const [userLocation, setUserLocation] = useState<Location | null>(null);
-  const [fountains, setFountains] = useState<WaterFountain[]>([]);
+  const [userLocation] = useState<Location | null>(null);
   const [showModal, setShowModal] = useState<boolean>(false);
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [formData, setFormData] = useState<FormData>({
@@ -211,11 +210,7 @@ const Map: React.FC = () => {
     storeToken({ accessToken: token });
   };
 
-  // TypeScript interfaces for better type safety
-  interface TokenData {
-    accessToken: string;
-    [key: string]: any;
-  }
+
 
   interface ApiResponse {
     error?: string;
