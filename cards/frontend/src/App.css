@@ -38,6 +38,7 @@
   margin-top: 12vh;
 }
 
+
 .form {
   background-color: rgba(255, 255, 255, 0.9);
   padding: 30px;
@@ -89,4 +90,267 @@ body {
 
 .read-the-docs {
   color: #888;
+}
+
+/*everythiing below is for the map page */
+
+/* Main container */
+.map-page {
+  
+ 
+}
+
+/* Header */
+.map-header {
+  position: relative;
+  margin-top: 55px;
+  padding: 24px;
+  text-align: center;
+  color: white;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  z-index: 0;
+}
+
+.map-title {
+  font-size: 1.875rem;
+  font-weight: bold;
+  margin-bottom: 16px;
+  margin-top: 0;
+}
+
+.button-container {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.header-button {
+  padding: 12px 24px;
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.header-button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.header-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.location-display {
+  margin-top: 16px;
+  font-size: 0.875rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  padding: 8px 16px;
+  display: inline-block;
+}
+
+.loading-indicator {
+  margin-top: 16px;
+  font-size: 0.875rem;
+  background: rgba(234, 179, 8, 0.2);
+  border-radius: 9999px;
+  padding: 8px 16px;
+  display: inline-block;
+}
+
+/* Map container */
+.map-container {
+  position: relative;
+  height: 600px;
+  width: 100%;
+  border-radius: 20px;
+  z-index: 0;
+}
+
+.map-instructions {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 12px 24px;
+  border-radius: 24px;
+  font-size: 0.875rem;
+  color: #374151;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+/* Modal overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  backdrop-filter: blur(4px);
+}
+
+/* Modal content */
+.modal-content {
+  background: #4a6fa5;
+  border-radius: 24px;
+  padding: 32px;
+  width: 100%;
+  max-width: 28rem;
+  margin: 0 16px;
+  box-shadow: 0 25px 50px -12px #fcf7ff;
+}
+
+.modal-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 24px;
+  color: #fcf7ff;
+  margin-top: 0;
+}
+
+/* Form styles */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #fcf7ff;
+  margin-bottom: 8px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.form-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+  resize: vertical;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.form-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.location-info {
+  font-size: 0.875rem;
+  color: #fcf7ff;
+  margin-bottom: 16px;
+}
+
+.location-info-last {
+  font-size: 0.875rem;
+  color: #fcf7ff;
+  margin-bottom: 16px;
+}
+
+/* Button styles */
+.button-group {
+  display: flex;
+  gap: 16px;
+}
+
+.button-secondary {
+  flex: 1;
+  padding: 12px 24px;
+  background: #fcf7ff;
+  color: #4a6fa5;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.button-secondary:hover {
+  background: #63ccca;
+}
+
+/* Status messages */
+.status-message {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  padding: 16px 24px;
+  border-radius: 12px;
+  color: white;
+  font-weight: 500;
+  z-index: 50;
+  max-width: 384px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.status-success {
+  background: #10b981;
+}
+
+.status-error {
+  background: #ef4444;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .map-header {
+    padding: 16px;
+  }
+  
+  .map-title {
+    font-size: 1.5rem;
+  }
+  
+  .button-container {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .header-button {
+    width: 100%;
+    max-width: 300px;
+  }
+  
+  .modal-content {
+    margin: 16px;
+    padding: 24px;
+  }
+  
+  .status-message {
+    right: 16px;
+    left: 16px;
+    max-width: none;
+  }
 }

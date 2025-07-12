@@ -15,6 +15,7 @@ function Login() {
   const doRegister = () => {
   navigate('/register');
   };
+  
 
 
   async function doLogin(event: any): Promise<void> {
@@ -42,7 +43,7 @@ function Login() {
           const user = { firstName, lastName, id: userId };
           localStorage.setItem('user_data', JSON.stringify(user));
           setMessage('');
-          window.location.href = '/cards';
+          window.location.href = '/Map';
         }
       } catch (e) {
         console.log(e);

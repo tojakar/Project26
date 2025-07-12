@@ -33,6 +33,7 @@ body {
 input {
   border-radius: 50px;
   background-color: #fcf7ff;
+  color: #4a6fa5;
   opacity: 0.7;
   border: 1px solid transparent;
 }

@@ -3,6 +3,7 @@ import './App.css';
 import LoginPage from './pages/LoginPage';
 import CardPage from './pages/CardPage';
 import RegisterPage from './pages/RegisterPage.tsx'; 
+import MapPage from './pages/MapPage.tsx'; 
 
 function App() {
   return (
@@ -10,6 +11,7 @@ function App() {
       <Routes>
         <Route path="/" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/map" element={<MapPage />} />
         <Route path="/cards" element={<CardPage />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
