@@ -326,6 +326,51 @@ exports.setApp = function ( app, client )
         res.status(200).json(ret);
     });
 
+    app.post('/api/getAllWaterFountains', async (req, res, next) =>{
+        // incoming: jwtToken
+        // outgoing: error, success, jwtToken, allWaterFountains[]
+        // allWaterFountains is an array of all water fountains in the database
+        const { jwtToken } = req.body;
+        try{
+            if( token.isExpired(jwtToken)){
+                var r = {error:'The JWT is no longer valid', jwtToken: ''};
+                res.status(401).json(r);
+                return;
+            }
+        }
+        catch(e){
+            console.log(e.message);
+        }
+        var error = '';
+        var success = '';
+        allWaterFountains = [];
+        try{
+            allWaterFountains = await waterFountain.find({});
+            if (!allWaterFountains) {
+                error = "No water fountains found";
+                res.status(404).json({ error: error, jwtToken: jwtToken });
+                return;
+            }
+            success = "Water fountains retrieved successfully";
+        }
+        catch (e){
+            error = e.toString();
+            res.status(404).json({ error: error, jwtToken: jwtToken });
+        }
 
+        var refreshedToken = null;
+        try{
+            refreshedToken = token.refresh(jwtToken);
+        }
+        catch(e){
+            console.log(e.message);
+            res.status(404).json({ error: error, jwtToken: jwtToken });
+        }
+
+
+        var ret = {allWaterFountains: allWaterFountains, success: success, jwtToken: refreshedToken };
+        res.status(200).json(ret);
+    });
 }
 
+     
