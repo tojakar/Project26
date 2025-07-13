@@ -241,12 +241,17 @@ const Map: React.FC = () => {
 
       } catch (error) {
         console.error('Fetch fountains error:', error);
+        console.log('API URL was:', buildPath('api/getAllWaterFountains'));
 
         if (axios.isAxiosError(error)) {
           const status = error.response?.status;
+          console.log('Error status:', status);
+          console.log('Error response:', error.response?.data);
 
           if (status === 401) {
             showStatus('Session expired. Please log in again.', 'error');
+          } else if (status === 404) {
+            showStatus('API endpoint not found. Server may not be updated.', 'error');
           } else {
             const message = error.response?.data?.error || error.message;
             showStatus('Error: ' + message, 'error');
@@ -337,7 +342,11 @@ const Map: React.FC = () => {
         jwtToken: token
       };
 
-      const response = await axios.post<ApiResponse>(buildPath('api/addWaterFountain'), fountainData, {
+      const apiUrl = buildPath('api/addWaterFountain');
+      console.log('Calling API URL:', apiUrl);
+      console.log('Sending data:', fountainData);
+
+      const response = await axios.post<ApiResponse>(apiUrl, fountainData, {
         headers: {
           'Content-Type': 'application/json',
         },
