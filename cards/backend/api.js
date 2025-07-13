@@ -5,11 +5,11 @@ const User = require("./models/user.js");
 //load card model
 const Card = require("./models/card.js");
 //load WaterFountain model
-const WaterFountain = require("./models/waterFountain.js");
+const WaterFountain = require("./models/WaterFountain.js");
 
 //hashing stuff
 const bcrypt = require('bcrypt');
-const waterFountain = require('./models/waterFountain.js');
+const waterFountain = require('./models/WaterFountain.js');
 const saltRounds = 10;
 
 exports.setApp = function ( app, client )
