@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { buildPath } from './Path';
 import { storeToken, retrieveToken } from '../tokenStorage';
-import { jwtDecode } from 'jwt-decode';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -68,6 +67,30 @@ const Map: React.FC = () => {
   const showStatus = (message: string, type: 'success' | 'error') => {
     setStatus({ message, type });
     setTimeout(() => setStatus({ message: '', type: '' }), 5000);
+  };
+  
+  const addFountainMarker = (fountain: WaterFountain) => {
+    if (!map || !window.L) return;
+
+    const fountainIcon = (window.L as any).divIcon({
+      html: '💧',
+      iconSize: [25, 25],
+      className: 'fountain-marker'
+    });
+
+    (window.L as any).marker([fountain.yCoord, fountain.xCoord], {
+      icon: fountainIcon
+    })
+      .addTo(map)
+      .bindPopup(`
+        <div>
+          <div hidden>${fountain._id}</div>
+          <h3>${fountain.name}</h3>
+          <p>${fountain.description}</p>
+          <p>Filter Level: ${fountain.filterLevel}/3</p>
+          <p>Rating: ${fountain.rating}/5 💧</p>
+        </div>
+      `);
   };
 
   // Load Leaflet dynamically
@@ -185,31 +208,77 @@ const Map: React.FC = () => {
     }
   }, [leafletLoaded, map]);
 
+  
+  useEffect(() => {
+    const fetchFountains = async () => {
+      const token = getJwtToken();
+
+      if (!token) {
+        showStatus('Please log in to load fountains.', 'error');
+        return;
+      }
+
+      try {
+        const response = await axios.post<ApiResponse>(
+          buildPath('api/getAllWaterFountains'),
+          { jwtToken: token },
+          { headers: { 'Content-Type': 'application/json' }, timeout: 10000 }
+        );
+
+        // Save refreshed token if present
+        if (response.data.jwtToken) {
+          setJwtToken(response.data.jwtToken);
+        }
+
+        const fountains = response.data.allWaterFountains;
+        if (!fountains || fountains.length === 0) {
+          showStatus('No fountains found.', 'error');
+          return;
+        }
+
+        fountains.forEach(addFountainMarker);
+        showStatus('Fountains loaded successfully!', 'success');
+
+      } catch (error) {
+        console.error('Fetch fountains error:', error);
+
+        if (axios.isAxiosError(error)) {
+          const status = error.response?.status;
+
+          if (status === 401) {
+            showStatus('Session expired. Please log in again.', 'error');
+          } else {
+            const message = error.response?.data?.error || error.message;
+            showStatus('Error: ' + message, 'error');
+          }
+        } else {
+          showStatus('Unexpected error: ' + (error as Error).message, 'error');
+        }
+      }
+    };
+
+    if (map && leafletLoaded) {
+      fetchFountains();
+    }
+  }, [map, leafletLoaded]);
+
+  
+
+  // Simple JWT functions using your existing tokenStorage
   const getJwtToken = (): string => {
-    const tokenData = retrieveToken();
-    
-    if (!tokenData) {
-      console.log('No token data found');
-      return '';
-    }
-    
-    // Handle both cases: token as string or token as object with accessToken property
-    if (typeof tokenData === 'string') {
-      console.log('Token is string format');
-      return tokenData;
-    } else if (tokenData && typeof tokenData === 'object' && 'accessToken' in tokenData) {
-      console.log('Token is object format with accessToken');
-      return tokenData.accessToken;
-    }
-    
-    console.log('Token format not recognized:', typeof tokenData);
-    return '';
+    return retrieveToken() || '';
   };
 
-  const setJwtToken = (token: string): void => {
-    storeToken({ accessToken: token });
+  const setJwtToken = (newToken: string | any): void => {
+    // Handle both string tokens and objects with accessToken
+    if (typeof newToken === 'string') {
+      storeToken({ accessToken: newToken });
+    } else if (newToken && newToken.accessToken) {
+      storeToken({ accessToken: newToken.accessToken });
+    } else {
+      storeToken({ accessToken: newToken });
+    }
   };
-
 
 
   interface ApiResponse {
@@ -217,13 +286,9 @@ const Map: React.FC = () => {
     success?: string;
     message?: string;
     jwtToken?: string;
-    fountains?: WaterFountain[];
+    allWaterFountains?: WaterFountain[];
+    addedWaterFountain?: WaterFountain;
     found?: WaterFountain[];
-  }
-
-  interface DecodedToken {
-    exp?: number;
-    [key: string]: any;
   }
 
   
@@ -258,22 +323,6 @@ const Map: React.FC = () => {
       const token = getJwtToken();
       if (!token) {
         showStatus('Please log in to add fountains', 'error');
-        setLoading(false);
-        return;
-      }
-
-      // Verify token is valid before sending
-      try {
-        const decodedToken = jwtDecode<DecodedToken>(token);
-        
-        // Check if token is expired
-        if (decodedToken.exp && decodedToken.exp < Date.now() / 1000) {
-          showStatus('Session expired. Please log in again.', 'error');
-          setLoading(false);
-          return;
-        }
-      } catch (tokenError) {
-        showStatus('Invalid session. Please log in again.', 'error');
         setLoading(false);
         return;
       }
@@ -320,26 +369,8 @@ const Map: React.FC = () => {
         showStatus(successMessage, 'success');
         
         // Add marker to map immediately
-        if (selectedLocation && map && window.L) {
-          const fountainIcon = (window.L as any).divIcon({
-            html: '💧',
-            iconSize: [25, 25],
-            className: 'fountain-marker'
-          });
-          
-          (window.L as any).marker([selectedLocation.lat, selectedLocation.lng], { 
-            icon: fountainIcon 
-          })
-            .addTo(map)
-            .bindPopup(`
-              <div>
-                <h3>${formData.name}</h3>
-                <p>${formData.description}</p>
-                <p>Filter Level: ${formData.filterLevel}/3</p>
-                <p>Rating: ${formData.rating}/5 💧</p>
-                <p><small>Just added!</small></p>
-              </div>
-            `);
+        if (selectedLocation && map && window.L && result.addedWaterFountain) {
+          addFountainMarker(result.addedWaterFountain);
         }
 
         // Reset form and close modal

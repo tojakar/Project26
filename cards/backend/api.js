@@ -138,48 +138,15 @@ exports.setApp = function ( app, client )
         }
     });
     
-    app.post('/api/searchcards', async (req, res, next) =>{
-        // incoming: userId, search
-        // outgoing: results[], error
-        var error = '';
-        const { userId, search, jwtToken } = req.body;
-        try
-        {
-        if( token.isExpired(jwtToken))
-        {
-        var r = {error:'The JWT is no longer valid', jwtToken: ''};
-        res.status(401).json(r);
-        return;
-        }
-        }
-        catch(e)
-        {
-        console.log(e.message);
-        }
-        var _search = search.trim();
-        const results = await Card.find({ "Card": { $regex: _search + '.*', $options: 'r' } });
-        var _ret = [];
-        for( var i=0; i<results.length; i++ )
-        {
-        _ret.push( results[i].Card );
-        }
-        var refreshedToken = null;
-        try
-        {
-        refreshedToken = token.refresh(jwtToken);
-        }
-        catch(e)
-        {
-        console.log(e.message);
-        }
-        var ret = { results:_ret, error: error, jwtToken: refreshedToken };
-        res.status(200).json(ret);
-    });
-
     app.post('/api/addWaterFountain', async (req, res, next) =>
     {
         // incoming: name,description, xCoord, yCoord, filterLevel
-        // outgoing: error, s
+        // outgoing: error, success, jwtToken, addedWaterFountain
+
+        
+
+
+
         const { name, description, xCoord, yCoord, filterLevel, rating, jwtToken } = req.body;
         try{
             if( token.isExpired(jwtToken)){
@@ -192,10 +159,11 @@ exports.setApp = function ( app, client )
             console.log(e.message);
         }
         const newWaterFountain = new waterFountain({name, description, xCoord, yCoord, filterLevel, rating});
-        var error = '';
-        var success = '';
+        let savedWaterFountain;
+        let error = '';
+        let success = ''; 
         try{
-            await newWaterFountain.save();
+            savedWaterFountain = await newWaterFountain.save();
             success = "Water fountain added successfully";
         }
         catch (e){
@@ -208,7 +176,7 @@ exports.setApp = function ( app, client )
         catch(e){
             console.log(e.message);
         }
-        var ret = { success: success, error: error, jwtToken: refreshedToken };
+        var ret = { success: success, error: error, jwtToken: refreshedToken, addedWaterFountain: savedWaterFountain };
         res.status(200).json(ret);
     });
 
@@ -343,7 +311,7 @@ exports.setApp = function ( app, client )
         }
         var error = '';
         var success = '';
-        allWaterFountains = [];
+        let allWaterFountains = [];
         try{
             allWaterFountains = await waterFountain.find({});
             if (!allWaterFountains) {
@@ -356,6 +324,7 @@ exports.setApp = function ( app, client )
         catch (e){
             error = e.toString();
             res.status(404).json({ error: error, jwtToken: jwtToken });
+            return;
         }
 
         var refreshedToken = null;
@@ -365,6 +334,7 @@ exports.setApp = function ( app, client )
         catch(e){
             console.log(e.message);
             res.status(404).json({ error: error, jwtToken: jwtToken });
+            return
         }
 
 
