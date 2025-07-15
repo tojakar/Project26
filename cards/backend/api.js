@@ -1,4 +1,6 @@
 require('express');
+const sgMail = require("@sendgrid/mail");
+sgMail.setApiKey(process.env.SENDGRID_API);
 require('mongodb');
 //load user model
 const User = require("./models/user.js");
