@@ -16,6 +16,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey, 
       title: 'Water Watch',
       theme: ThemeData(
         primarySwatch: Colors.red,

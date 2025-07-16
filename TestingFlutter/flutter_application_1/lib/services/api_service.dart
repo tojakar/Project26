@@ -197,4 +197,47 @@ class ApiService {
       'email': prefs.getString('user_email'),
     };
   }
+
+  static Future<Map<String, dynamic>> getAllWaterFountains() async {
+  try {
+    final jwtToken = await getToken();
+    if (jwtToken == null) {
+      return {
+        'success': false,
+        'message': 'User not logged in',
+      };
+    }
+
+    final response = await http.post(
+      Uri.parse(buildPath('api/getAllWaterFountains')),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'jwtToken': jwtToken,
+      }),
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      return {
+        'success': true,
+        'waterFountains': data['allWaterFountains'], // or adjust to match your backend response
+      };
+    } else {
+      return {
+        'success': false,
+        'message': data['error'] ?? 'Failed to fetch fountains',
+      };
+    }
+  } catch (e) {
+    return {
+      'success': false,
+      'message': 'Network error: ${e.toString()}',
+    };
+  }
+}
+
+
 }
