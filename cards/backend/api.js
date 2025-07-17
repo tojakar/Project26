@@ -343,6 +343,76 @@ exports.setApp = function ( app, client )
         var ret = {allWaterFountains: allWaterFountains, success: success, jwtToken: refreshedToken };
         res.status(200).json(ret);
     });
+
+    // rate water fountains
+    app.post('/api/rateWaterFountain', async (req, res) => {
+        // incoming: userId, fountainId, rating, jwtToken
+        // outgoing: error, success, jwtToken
+        const { userId, fountainId, rating, jwtToken } = req.body;
+
+        try {
+            if (token.isExpired(jwtToken)) {
+                return res.status(401).json({ error: 'JWT expired', jwtToken: '' });
+            }
+        } catch (e) {
+            console.log(e.message);
+        }
+
+        let error = '';
+        let success = '';
+        let refreshedToken = null;
+
+        try {
+            // Upsert the rating (insert if not exists, update if it does)
+            await Rating.findOneAndUpdate(
+                { userId, fountainId },
+                { rating },
+                { upsert: true, new: true }
+            );
+            success = 'Rating saved/updated successfully';
+        } catch (e) {
+            error = e.toString();
+        }
+        
+        try {
+            refreshedToken = token.refresh(jwtToken);
+        } catch (e) {
+            console.log(e.message);
+        }
+
+        res.status(200).json({ error, success, jwtToken: refreshedToken });
+    });
+
+    //get user ratings
+    app.post('/api/getUserRating', async (req, res) => {
+        const { userId, fountainId, jwtToken } = req.body;
+
+        try {
+            if (token.isExpired(jwtToken)) {
+                return res.status(401).json({ error: 'JWT expired', jwtToken: '' });
+            }
+        } catch (e) {
+            console.log(e.message);
+        }
+
+        let error = '';
+        let userRating = null;
+        let refreshedToken = null;
+
+        try {
+            userRating = await Rating.findOne({ userId, fountainId });
+        } catch (e) {
+            error = e.toString();
+        }
+
+        try {
+            refreshedToken = token.refresh(jwtToken);
+        } catch (e) {
+            console.log(e.message);
+        }
+
+        res.status(200).json({ rating: userRating?.rating || null, error, jwtToken: refreshedToken });
+    });
 }
 
      
