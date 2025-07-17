@@ -8,6 +8,7 @@ const User = require("./models/user.js");
 const Card = require("./models/card.js");
 //load WaterFountain model
 const WaterFountain = require("./models/WaterFountain.js");
+const Rating = require("./models/rating.js");
 
 //hashing stuff
 const bcrypt = require('bcrypt');
