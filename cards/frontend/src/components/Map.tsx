@@ -4,6 +4,7 @@ import { buildPath } from './Path';
 import { storeToken, retrieveToken } from '../tokenStorage';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import SearchFountain from './SearchFountain';
 
 function doLogout(event:any) : void
 {
@@ -47,6 +48,16 @@ interface Status {
   type: 'success' | 'error' | '';
 }
 
+interface ApiResponse {
+  error?: string;
+  success?: string;
+  message?: string;
+  jwtToken?: string;
+  allWaterFountains?: WaterFountain[];
+  addedWaterFountain?: WaterFountain;
+  found?: WaterFountain[];
+}
+
 const Map: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<any>(null);
@@ -62,15 +73,30 @@ const Map: React.FC = () => {
   });
   const [status, setStatus] = useState<Status>({ message: '', type: '' });
   const [loading, setLoading] = useState<boolean>(false);
+  const [allFountainMarkers, setAllFountainMarkers] = useState<L.Marker[]>([]);
+  const [searchResults, setSearchResults] = useState<WaterFountain[]>([]);
+  const [isSearchActive, setIsSearchActive] = useState(false);
 
   // Add this helper function to show status messages
   const showStatus = (message: string, type: 'success' | 'error') => {
     setStatus({ message, type });
     setTimeout(() => setStatus({ message: '', type: '' }), 5000);
   };
+
+  // Clear search and show all fountains
+  const clearSearch = () => {
+    setSearchResults([]);
+    setIsSearchActive(false);
+    // Show all fountain markers
+    allFountainMarkers.forEach(marker => {
+      if (map && map.hasLayer && !map.hasLayer(marker)) {
+        marker.addTo(map);
+      }
+    });
+  };
   
   const addFountainMarker = (fountain: WaterFountain) => {
-    if (!map || !window.L) return;
+    if (!map || !window.L) return null;
 
     const fountainIcon = (window.L as any).divIcon({
       html: '💧',
@@ -78,7 +104,7 @@ const Map: React.FC = () => {
       className: 'fountain-marker'
     });
 
-    (window.L as any).marker([fountain.yCoord, fountain.xCoord], {
+    const marker = (window.L as any).marker([fountain.yCoord, fountain.xCoord], {
       icon: fountainIcon
     })
       .addTo(map)
@@ -91,8 +117,59 @@ const Map: React.FC = () => {
           <p>Rating: ${fountain.rating}/5 💧</p>
         </div>
       `);
+
+    return marker;
   };
 
+  // Handle search results
+  const handleSearchResults = (foundFountains: WaterFountain[]) => {
+    if (!foundFountains || foundFountains.length === 0) {
+      // Clear search - show all fountains
+      clearSearch();
+      return;
+    }
+
+    setSearchResults(foundFountains);
+    setIsSearchActive(true);
+
+    // Hide all fountain markers first
+    allFountainMarkers.forEach(marker => {
+      if (map && map.hasLayer && map.hasLayer(marker)) {
+        map.removeLayer(marker);
+      }
+    });
+
+    // Show only the search result markers
+    foundFountains.forEach(fountain => {
+      // Find the existing marker for this fountain
+      const existingMarker = allFountainMarkers.find(marker => {
+        const markerLatLng = marker.getLatLng();
+        return markerLatLng.lat === fountain.yCoord && markerLatLng.lng === fountain.xCoord;
+      });
+
+      if (existingMarker) {
+        // Add the existing marker back to the map
+        existingMarker.addTo(map);
+      } else {
+        // Create a new marker if it doesn't exist (shouldn't happen with normal flow)
+        const newMarker = addFountainMarker(fountain);
+        if (newMarker) {
+          setAllFountainMarkers(prev => [...prev, newMarker]);
+        }
+      }
+    });
+
+    // Zoom to fit search results
+    if (foundFountains.length > 0) {
+      const bounds = new (window.L as any).LatLngBounds();
+      foundFountains.forEach(fountain => {
+        bounds.extend([fountain.yCoord, fountain.xCoord]);
+      });
+      map.fitBounds(bounds.pad(0.1));
+    }
+  };
+
+  
   // Load Leaflet dynamically
   useEffect(() => {
     const loadLeaflet = async () => {
@@ -140,6 +217,12 @@ const Map: React.FC = () => {
             background: none !important;
             border: none !important;
             font-size: 24px;
+          }
+          .fountain-marker {
+            background: none !important;
+            border: none !important;
+            text-align: center;
+            font-size: 20px;
           }
           .leaflet-control-zoom {
             border-radius: 8px !important;
@@ -198,7 +281,6 @@ const Map: React.FC = () => {
           mapInstance.invalidateSize();
         }, 100);
 
-
         setMap(mapInstance);
         showStatus('Map loaded successfully!', 'success');
       } catch (error) {
@@ -225,10 +307,13 @@ const Map: React.FC = () => {
           { headers: { 'Content-Type': 'application/json' }, timeout: 10000 }
         );
 
-        // Save refreshed token if present
+        // Save refreshed token if present - IMPORTANT: Always update token
         if (response.data.jwtToken) {
-          setJwtToken(response.data.jwtToken);
-        }
+  const tok = typeof response.data.jwtToken === 'string'
+    ? response.data.jwtToken
+    : response.data.jwtToken.accessToken;
+  storeToken({ accessToken: tok });
+}
 
         const fountains = response.data.allWaterFountains;
         if (!fountains || fountains.length === 0) {
@@ -236,7 +321,16 @@ const Map: React.FC = () => {
           return;
         }
 
-        fountains.forEach(addFountainMarker);
+        // Create markers and store them
+        const markers: L.Marker[] = [];
+        fountains.forEach(fountain => {
+          const marker = addFountainMarker(fountain);
+          if (marker) {
+            markers.push(marker);
+          }
+        });
+        
+        setAllFountainMarkers(markers);
         showStatus('Fountains loaded successfully!', 'success');
 
       } catch (error) {
@@ -284,17 +378,6 @@ const Map: React.FC = () => {
       storeToken({ accessToken: newToken });
     }
   };
-
-
-  interface ApiResponse {
-    error?: string;
-    success?: string;
-    message?: string;
-    jwtToken?: string;
-    allWaterFountains?: WaterFountain[];
-    addedWaterFountain?: WaterFountain;
-    found?: WaterFountain[];
-  }
 
   
 
@@ -355,9 +438,10 @@ const Map: React.FC = () => {
 
       const result: ApiResponse = response.data;
       
-      // Handle JWT token refresh
+      // Handle JWT token refresh - IMPORTANT: Always update token
       if (result.jwtToken) {
         setJwtToken(result.jwtToken);
+        console.log('Token refreshed during add fountain');
       }
 
       // Check for errors from backend
@@ -379,7 +463,10 @@ const Map: React.FC = () => {
         
         // Add marker to map immediately
         if (selectedLocation && map && window.L && result.addedWaterFountain) {
-          addFountainMarker(result.addedWaterFountain);
+          const newMarker = addFountainMarker(result.addedWaterFountain);
+          if (newMarker) {
+            setAllFountainMarkers(prev => [...prev, newMarker]);
+          }
         }
 
         // Reset form and close modal
@@ -399,7 +486,7 @@ const Map: React.FC = () => {
             className: 'fountain-marker'
           });
           
-          (window.L as any).marker([selectedLocation.lat, selectedLocation.lng], { 
+          const marker = (window.L as any).marker([selectedLocation.lat, selectedLocation.lng], { 
             icon: fountainIcon 
           })
             .addTo(map)
@@ -412,6 +499,8 @@ const Map: React.FC = () => {
                 <p><small>Pending verification...</small></p>
               </div>
             `);
+
+          setAllFountainMarkers(prev => [...prev, marker]);
         }
 
         // Reset form and close modal
@@ -455,13 +544,13 @@ const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaE
       {/* Header */}
       <div className="map-header">
         <div className="button-container">
-          <button
-            //onClick={searchFountains}
-            disabled={loading || !leafletLoaded}
-            className="buttons"
-          >
-            Search Fountains
-          </button>
+          <SearchFountain
+            onResults={handleSearchResults}
+            showStatus={showStatus}
+            onClear={clearSearch}
+            isSearchActive={isSearchActive}
+            searchResultsCount={searchResults.length}
+          />
         </div>
         {userLocation && (
           <div className="location-display">
@@ -576,6 +665,11 @@ const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaE
         <div ref={mapRef} style={{ height: '500px', width: '1000px' }} />
         <div className="map-instructions">
           💧 Click anywhere on the map to add a water fountain
+          {isSearchActive && (
+            <div style={{ marginTop: '5px', fontSize: '14px', color: '#007bff' }}>
+              🔍 Showing {searchResults.length} search result(s)
+            </div>
+          )}
         </div>
         <button type="button" id="logoutButton" className="buttons"
             onClick={doLogout} style={{float: 'right'}}> Log Out </button>
@@ -589,9 +683,6 @@ const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaE
       )}
     </div>
   );
-
-
-
 };
 
 export default Map;

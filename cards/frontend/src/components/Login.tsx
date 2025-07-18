@@ -28,7 +28,9 @@ function Login() {
       });
 
       const { accessToken } = response.data;
-      storeToken(response.data);
+
+// Store the string token
+storeToken({ accessToken });
 
       try {
         const decoded: any = jwtDecode(accessToken);
