@@ -5,6 +5,8 @@ import { storeToken, retrieveToken } from '../tokenStorage';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import SearchFountain from './SearchFountain';
+import ReactDOM from 'react-dom/client';
+import StarRating from './StarRating.tsx';
 
 function doLogout(event:any) : void
 {
@@ -52,7 +54,7 @@ interface ApiResponse {
   error?: string;
   success?: string;
   message?: string;
-  jwtToken?: string;
+  jwtToken?: string | { accessToken: string };
   allWaterFountains?: WaterFountain[];
   addedWaterFountain?: WaterFountain;
   found?: WaterFountain[];
@@ -96,30 +98,48 @@ const Map: React.FC = () => {
   };
   
   const addFountainMarker = (fountain: WaterFountain) => {
-    if (!map || !window.L) return null;
+  if (!map || !window.L) return null;
 
-    const fountainIcon = (window.L as any).divIcon({
-      html: '💧',
-      iconSize: [25, 25],
-      className: 'fountain-marker'
-    });
+  const fountainIcon = (window.L as any).divIcon({
+    html: '💧',
+    iconSize: [25, 25],
+    className: 'fountain-marker'
+  });
 
-    const marker = (window.L as any).marker([fountain.yCoord, fountain.xCoord], {
-      icon: fountainIcon
-    })
-      .addTo(map)
-      .bindPopup(`
-        <div>
-          <div hidden>${fountain._id}</div>
-          <h3>${fountain.name}</h3>
-          <p>${fountain.description}</p>
-          <p>Filter Level: ${fountain.filterLevel}/3</p>
-          <p>Rating: ${fountain.rating}/5 💧</p>
-        </div>
-      `);
+  const marker = (window.L as any).marker([fountain.yCoord, fountain.xCoord], {
+    icon: fountainIcon
+  }).addTo(map)
+    .bindPopup(`
+      <div>
+        <div hidden>${fountain._id}</div>
+        <h3>${fountain.name}</h3>
+        <p>${fountain.description}</p>
+        <p>Filter Level: ${fountain.filterLevel}/3</p>
+        <p>Rating: ${fountain.rating}/5 💧</p>
+        <div id="rating-${fountain._id}"></div>
+      </div>
+    `);
 
-    return marker;
-  };
+  // Render the StarRating React component into the popup when opened
+  marker.on('popupopen', () => {
+    const container = document.getElementById(`rating-${fountain._id}`);
+    const token = retrieveToken();
+    const userData = JSON.parse(localStorage.getItem("user_data") || "{}");
+
+    if (container && userData?.id && token) {
+      const root = ReactDOM.createRoot(container);
+      root.render(
+        <StarRating
+          userId={userData.id}
+          fountainId={fountain._id}
+          jwtToken={token}
+        />
+      );
+    }
+  });
+
+  return marker;
+};
 
   // Handle search results
   const handleSearchResults = (foundFountains: WaterFountain[]) => {

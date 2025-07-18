@@ -16,7 +16,7 @@ interface WaterFountain {
 
 interface ApiResponse {
   found?: WaterFountain[];
-  jwtToken?: string;
+  jwtToken?: string | { accessToken: string };
   error?: string;
   success?: string;
 }
