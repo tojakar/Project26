@@ -130,7 +130,7 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 40),
 
                   // Email TextField
-                  Container(
+                  SizedBox(
                     width: 300,
                     child: TextField(
                       controller: _emailController,
@@ -168,7 +168,7 @@ class _LoginPageState extends State<LoginPage> {
                   const SizedBox(height: 20),
 
                   // Password TextField
-                  Container(
+                  SizedBox(
                     width: 300,
                     child: TextField(
                       controller: _passwordController,
@@ -216,7 +216,7 @@ class _LoginPageState extends State<LoginPage> {
 
                   // Error message display
                   if (_errorMessage.isNotEmpty)
-                    Container(
+                    SizedBox(
                       width: 300,
                       child: Text(
                         _errorMessage,

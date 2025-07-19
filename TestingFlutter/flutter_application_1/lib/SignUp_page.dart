@@ -140,7 +140,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   const SizedBox(height: 40),
 
                   // First Name TextField
-                  Container(
+                  SizedBox(
                     width: 300,
                     child: TextField(
                       controller: _firstNameController,
@@ -177,7 +177,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   const SizedBox(height: 20),
 
                   // Last Name TextField
-                  Container(
+                  SizedBox(
                     width: 300,
                     child: TextField(
                       controller: _lastNameController,
@@ -214,7 +214,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   const SizedBox(height: 20),
 
                   // Email TextField
-                  Container(
+                  SizedBox(
                     width: 300,
                     child: TextField(
                       controller: _emailController,
@@ -252,7 +252,7 @@ class _SignUpPageState extends State<SignUpPage> {
                   const SizedBox(height: 20),
 
                   // Password TextField
-                  Container(
+                  SizedBox(
                     width: 300,
                     child: TextField(
                       controller: _passwordController,
@@ -300,7 +300,7 @@ class _SignUpPageState extends State<SignUpPage> {
 
                   // Error message display
                   if (_errorMessage.isNotEmpty)
-                    Container(
+                    SizedBox(
                       width: 300,
                       child: Text(
                         _errorMessage,

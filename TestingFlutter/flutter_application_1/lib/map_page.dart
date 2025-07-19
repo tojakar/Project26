@@ -15,7 +15,7 @@ class MapPage extends StatefulWidget {
 }
 
 class _MapPageState extends State<MapPage> {
-  List<Marker> _markers = [];
+  final List<Marker> _markers = [];
 
   @override
   void initState() {
@@ -285,7 +285,7 @@ class _MapPageState extends State<MapPage> {
 
 class AddFountainDialog extends StatefulWidget {
   final LatLng location;
-  const AddFountainDialog({required this.location});
+  const AddFountainDialog({super.key, required this.location});
 
   @override
   _AddFountainDialogState createState() => _AddFountainDialogState();
