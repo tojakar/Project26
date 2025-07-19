@@ -28,7 +28,7 @@ interface Location {
 }
 
 interface WaterFountain {
-  createdBy: any;
+  createdBy: string;
   _id: string;
   name: string;
   description: string;

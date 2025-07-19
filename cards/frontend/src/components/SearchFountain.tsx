@@ -5,6 +5,7 @@ import { buildPath } from "./Path";
 import { retrieveToken, storeToken } from "../tokenStorage";
 
 interface WaterFountain {
+  createdBy: string;
   _id: string;
   name: string;
   description: string;
