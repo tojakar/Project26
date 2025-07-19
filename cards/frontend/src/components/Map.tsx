@@ -8,11 +8,10 @@ import SearchFountain from './SearchFountain';
 import ReactDOM from 'react-dom/client';
 import StarRating from './StarRating.tsx';
 
-function doLogout(event:any) : void
-{
-event.preventDefault();
-localStorage.removeItem("user_data")
-window.location.href = '/';
+function doLogout(event: any): void {
+  event.preventDefault();
+  localStorage.removeItem("user_data")
+  window.location.href = '/';
 };
 
 // Extend Window interface for Leaflet
@@ -60,6 +59,29 @@ interface ApiResponse {
   found?: WaterFountain[];
 }
 
+const StarSelector: React.FC<{
+  rating: number;
+  onRatingChange: (rating: number) => void;
+}> = ({ rating, onRatingChange }) => {
+  return (
+    <div style={{ display: 'flex', gap: '4px' }}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <span
+          key={star}
+          onClick={() => onRatingChange(star)}
+          style={{
+            cursor: 'pointer',
+            color: star <= rating ? '#FFD700' : '#CCCCCC',
+            fontSize: '24px',
+          }}
+        >
+          ★
+        </span>
+      ))}
+    </div>
+  );
+};
+
 const Map: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<any>(null);
@@ -78,6 +100,14 @@ const Map: React.FC = () => {
   const [allFountainMarkers, setAllFountainMarkers] = useState<L.Marker[]>([]);
   const [searchResults, setSearchResults] = useState<WaterFountain[]>([]);
   const [isSearchActive, setIsSearchActive] = useState(false);
+  const [showEditModal, setShowEditModal] = useState<boolean>(false);
+  const [editingFountain, setEditingFountain] = useState<WaterFountain | null>(null);
+  const [editFormData, setEditFormData] = useState<FormData>({
+    name: '',
+    description: '',
+    filterLevel: 1,
+    rating: 5
+  });
 
   // Add this helper function to show status messages
   const showStatus = (message: string, type: 'success' | 'error') => {
@@ -96,20 +126,20 @@ const Map: React.FC = () => {
       }
     });
   };
-  
+
   const addFountainMarker = (fountain: WaterFountain) => {
-  if (!map || !window.L) return null;
+    if (!map || !window.L) return null;
 
-  const fountainIcon = (window.L as any).divIcon({
-    html: '💧',
-    iconSize: [25, 25],
-    className: 'fountain-marker'
-  });
+    const fountainIcon = (window.L as any).divIcon({
+      html: '💧',
+      iconSize: [25, 25],
+      className: 'fountain-marker'
+    });
 
-  const marker = (window.L as any).marker([fountain.yCoord, fountain.xCoord], {
-    icon: fountainIcon
-  }).addTo(map)
-    .bindPopup(`
+    const marker = (window.L as any).marker([fountain.yCoord, fountain.xCoord], {
+      icon: fountainIcon
+    }).addTo(map)
+      .bindPopup(`
       <div>
         <div hidden>${fountain._id}</div>
         <h3>${fountain.name}</h3>
@@ -117,29 +147,116 @@ const Map: React.FC = () => {
         <p>Filter Level: ${fountain.filterLevel}/3</p>
         <p>Rating: ${fountain.rating}/5 💧</p>
         <div id="rating-${fountain._id}"></div>
+        <div id="edit-button-${fountain._id}"></div>
       </div>
     `);
 
-  // Render the StarRating React component into the popup when opened
-  marker.on('popupopen', () => {
-    const container = document.getElementById(`rating-${fountain._id}`);
-    const token = retrieveToken();
-    const userData = JSON.parse(localStorage.getItem("user_data") || "{}");
+    marker.on('popupopen', () => {
+      const container = document.getElementById(`rating-${fountain._id}`);
+      const editContainer = document.getElementById(`edit-button-${fountain._id}`);
+      const token = retrieveToken();
+      const userData = JSON.parse(localStorage.getItem("user_data") || "{}");
 
-    if (container && userData?.id && token) {
-      const root = ReactDOM.createRoot(container);
-      root.render(
-        <StarRating
-          userId={userData.id}
-          fountainId={fountain._id}
-          jwtToken={token}
-        />
-      );
+      if (container && userData?.id && token) {
+        const root = ReactDOM.createRoot(container);
+        root.render(
+          <StarRating
+            userId={userData.id}
+            fountainId={fountain._id}
+            jwtToken={token}
+          />
+        );
+      }
+
+      if (editContainer && userData?.id && fountain.createdBy === userData.id) {
+        const editRoot = ReactDOM.createRoot(editContainer);
+        editRoot.render(
+          <button
+            onClick={() => openEditModal(fountain)}
+            style={{
+              background: '#4a6fa5',
+              color: 'white',
+              border: 'none',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              marginTop: '8px'
+            }}
+          >
+            ✏️ Edit Fountain
+          </button>
+        );
+      }
+    });
+
+    return marker;
+  };
+
+  const openEditModal = (fountain: WaterFountain) => {
+    setEditingFountain(fountain);
+    setEditFormData({
+      name: fountain.name,
+      description: fountain.description,
+      filterLevel: fountain.filterLevel,
+      rating: fountain.rating
+    });
+    setShowEditModal(true);
+  };
+
+  const updateWaterFountain = async (e: React.MouseEvent<HTMLButtonElement>): Promise<void> => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      if (!editingFountain) {
+        throw new Error('');
+      }
+
+      const token = getJwtToken();
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      const updateData = {
+        id: editingFountain._id,
+        editedFields: {
+          name: editFormData.name.trim(),
+          description: editFormData.description.trim(),
+          filterLevel: Number(editFormData.filterLevel),
+          rating: Number(editFormData.rating)
+        },
+        jwtToken: token
+      };
+
+      const response = await axios.post(buildPath('api/editWaterFountain'), updateData, {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 10000
+      });
+
+      const result = response.data;
+
+      if (result.jwtToken) {
+        setJwtToken(result.jwtToken);
+      }
+
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
+      showStatus('Fountain updated successfully!', 'success');
+      setShowEditModal(false);
+      setEditingFountain(null);
+
+      window.location.reload(); 
+
+    } catch (error) {
+      console.error(error);
+      showStatus('Error updating fountain: ' + (error as Error).message, 'error');
+    } finally {
+      setLoading(false);
     }
-  });
-
-  return marker;
-};
+  };
 
   // Handle search results
   const handleSearchResults = (foundFountains: WaterFountain[]) => {
@@ -189,7 +306,7 @@ const Map: React.FC = () => {
     }
   };
 
-  
+
   // Load Leaflet dynamically
   useEffect(() => {
     const loadLeaflet = async () => {
@@ -213,7 +330,7 @@ const Map: React.FC = () => {
         script.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js';
         script.integrity = 'sha512-BwHfrr4c9kmRkLw6iXFdzcdWV/PGkVgiIyIWLLlTSXzWQzxuSg4DiQUCpauz/EWjgk5TYQqX/kvn9pG1NpYfqg==';
         script.crossOrigin = 'anonymous';
-        
+
         script.onload = () => {
           setTimeout(() => {
             if (window.L) {
@@ -223,11 +340,11 @@ const Map: React.FC = () => {
             }
           }, 100);
         };
-        
+
         script.onerror = () => {
           showStatus('Failed to load map library', 'error');
         };
-        
+
         document.head.appendChild(script);
 
         // Add custom marker styles
@@ -275,7 +392,7 @@ const Map: React.FC = () => {
       try {
         // Clear any existing content
         mapRef.current.innerHTML = '';
-        
+
         // Initialize map with proper configuration
         const mapInstance = window.L.map(mapRef.current, {
           center: [28.6023, -81.2005],
@@ -283,7 +400,7 @@ const Map: React.FC = () => {
           zoomControl: true,
           attributionControl: true
         });
-        
+
         // Add tile layer
         window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -310,7 +427,7 @@ const Map: React.FC = () => {
     }
   }, [leafletLoaded, map]);
 
-  
+
   useEffect(() => {
     const fetchFountains = async () => {
       const token = getJwtToken();
@@ -329,11 +446,11 @@ const Map: React.FC = () => {
 
         // Save refreshed token if present - IMPORTANT: Always update token
         if (response.data.jwtToken) {
-  const tok = typeof response.data.jwtToken === 'string'
-    ? response.data.jwtToken
-    : response.data.jwtToken.accessToken;
-  storeToken({ accessToken: tok });
-}
+          const tok = typeof response.data.jwtToken === 'string'
+            ? response.data.jwtToken
+            : response.data.jwtToken.accessToken;
+          storeToken({ accessToken: tok });
+        }
 
         const fountains = response.data.allWaterFountains;
         if (!fountains || fountains.length === 0) {
@@ -349,7 +466,7 @@ const Map: React.FC = () => {
             markers.push(marker);
           }
         });
-        
+
         setAllFountainMarkers(markers);
         showStatus('Fountains loaded successfully!', 'success');
 
@@ -381,7 +498,7 @@ const Map: React.FC = () => {
     }
   }, [map, leafletLoaded]);
 
-  
+
 
   // Simple JWT functions using your existing tokenStorage
   const getJwtToken = (): string => {
@@ -399,9 +516,9 @@ const Map: React.FC = () => {
     }
   };
 
-  
 
- 
+
+
   const addWaterFountain = async (e: React.MouseEvent<HTMLButtonElement>): Promise<void> => {
     e.preventDefault();
     setLoading(true);
@@ -457,7 +574,7 @@ const Map: React.FC = () => {
       });
 
       const result: ApiResponse = response.data;
-      
+
       // Handle JWT token refresh - IMPORTANT: Always update token
       if (result.jwtToken) {
         setJwtToken(result.jwtToken);
@@ -466,21 +583,21 @@ const Map: React.FC = () => {
 
       // Check for errors from backend
       if (result.error) {
-        if (result.error.toLowerCase().includes('jwt') || 
-            result.error.toLowerCase().includes('token') || 
-            result.error.toLowerCase().includes('expired')) {
+        if (result.error.toLowerCase().includes('jwt') ||
+          result.error.toLowerCase().includes('token') ||
+          result.error.toLowerCase().includes('expired')) {
           showStatus('Session expired. Please log in again.', 'error');
           setLoading(false);
           return;
         }
         throw new Error(result.error);
       }
-      
+
       // Check for success indicators
       if (result.success || result.message) {
         const successMessage = result.success || result.message || 'Fountain added successfully!';
         showStatus(successMessage, 'success');
-        
+
         // Add marker to map immediately
         if (selectedLocation && map && window.L && result.addedWaterFountain) {
           const newMarker = addFountainMarker(result.addedWaterFountain);
@@ -493,11 +610,11 @@ const Map: React.FC = () => {
         setFormData({ name: '', description: '', filterLevel: 1, rating: 5 });
         setShowModal(false);
         setSelectedLocation(null);
-        
+
       } else {
         // Handle case where no explicit success message is returned
         showStatus('Fountain submitted - checking if it was saved...', 'success');
-        
+
         // Add marker to map anyway
         if (selectedLocation && map && window.L) {
           const fountainIcon = (window.L as any).divIcon({
@@ -505,9 +622,9 @@ const Map: React.FC = () => {
             iconSize: [25, 25],
             className: 'fountain-marker'
           });
-          
-          const marker = (window.L as any).marker([selectedLocation.lat, selectedLocation.lng], { 
-            icon: fountainIcon 
+
+          const marker = (window.L as any).marker([selectedLocation.lat, selectedLocation.lng], {
+            icon: fountainIcon
           })
             .addTo(map)
             .bindPopup(`
@@ -528,7 +645,7 @@ const Map: React.FC = () => {
         setShowModal(false);
         setSelectedLocation(null);
       }
-      
+
     } catch (error) {
       if (axios.isAxiosError(error)) {
         if (error.response?.status === 401) {
@@ -548,16 +665,16 @@ const Map: React.FC = () => {
     } finally {
       setLoading(false);
     }
-};
+  };
 
-// Handle form input changes function 
-const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void => {
-  const { name, value } = e.target;
-  setFormData(prev => ({
-    ...prev,
-    [name]: name === 'filterLevel' || name === 'rating' ? parseInt(value) : value
-  }));
-};
+  // Handle form input changes function 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: name === 'filterLevel' || name === 'rating' ? parseInt(value) : value
+    }));
+  };
 
   return (
     <div className="map-page">
@@ -584,7 +701,7 @@ const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaE
         )}
       </div>
 
-      
+
 
       {/* Modal */}
       {showModal && (
@@ -638,16 +755,11 @@ const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaE
 
               <div className="form-group">
                 <label className="form-label">
-                  Rating (1-5)
+                  Rating ({formData.rating}/5)
                 </label>
-                <input
-                  type="number"
-                  name="rating"
-                  value={formData.rating}
-                  onChange={handleInputChange}
-                  min={1}
-                  max={5}
-                  className="form-input"
+                <StarSelector
+                  rating={formData.rating}
+                  onRatingChange={(newRating) => setFormData(prev => ({ ...prev, rating: newRating }))}
                 />
               </div>
 
@@ -680,6 +792,84 @@ const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaE
           </div>
         </div>
       )}
+
+      {/* Edit Modal */}
+      {showEditModal && editingFountain && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2 className="modal-title">Edit Water Fountain</h2>
+            <div>
+              <div className="form-group">
+                <label className="form-label">Name *</label>
+                <input
+                  type="text"
+                  name="name"
+                  value={editFormData.name}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
+                  required
+                  className="form-input"
+                  placeholder="Enter fountain name"
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Description</label>
+                <textarea
+                  name="description"
+                  value={editFormData.description}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
+                  className="form-textarea"
+                  placeholder="Describe the fountain..."
+                  rows={3}
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Filter Level (1-3)</label>
+                <input
+                  type="number"
+                  name="filterLevel"
+                  value={editFormData.filterLevel}
+                  onChange={(e) => setEditFormData(prev => ({ ...prev, filterLevel: parseInt(e.target.value) }))}
+                  min={1}
+                  max={3}
+                  className="form-input"
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Rating ({editFormData.rating}/5)</label>
+                <StarSelector
+                  rating={editFormData.rating}
+                  onRatingChange={(newRating) => setEditFormData(prev => ({ ...prev, rating: newRating }))}
+                />
+              </div>
+
+              <div className="button-group">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingFountain(null);
+                    setEditFormData({ name: '', description: '', filterLevel: 1, rating: 5 });
+                  }}
+                  className="button-secondary"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  onClick={updateWaterFountain}
+                  className="button-secondary"
+                >
+                  {loading ? 'Updating...' : 'Update Fountain'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Map Container */}
       <div className="map-container">
         <div ref={mapRef} style={{ height: '500px', width: '1000px' }} />
@@ -692,7 +882,7 @@ const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaE
           )}
         </div>
         <button type="button" id="logoutButton" className="buttons"
-            onClick={doLogout} style={{float: 'right'}}> Log Out </button>
+          onClick={doLogout} style={{ float: 'right' }}> Log Out </button>
       </div>
 
       {/* Status Messages */}

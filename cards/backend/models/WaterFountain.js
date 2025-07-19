@@ -1,7 +1,7 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
-//Create Schema
-const UserSchema = new Schema({
+
+const WaterFountainSchema = new Schema({
     name: {
         type: String,
         required: true
@@ -31,5 +31,11 @@ const UserSchema = new Schema({
         max: 5,
         default: 0
     },
-});
-module.exports = user = mongoose.model("WaterFountain", UserSchema);
+    createdBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'Users',
+        required: true
+    }
+}, { timestamps: true });
+
+module.exports = mongoose.model("WaterFountain", WaterFountainSchema);
