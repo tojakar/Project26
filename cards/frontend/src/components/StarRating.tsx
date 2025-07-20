@@ -43,6 +43,17 @@ const StarRating: React.FC<StarRatingProps> = ({ userId, fountainId, jwtToken })
           }),
         });
 
+        if (!res.ok) {
+          console.error(`HTTP error! status: ${res.status}`);
+          return;
+        }
+
+        const contentType = res.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          console.error('Expected JSON response but got:', contentType);
+          return;
+        }
+
         const data = await res.json();
 
         if (data.jwtToken) {
@@ -54,7 +65,7 @@ const StarRating: React.FC<StarRatingProps> = ({ userId, fountainId, jwtToken })
 
         if (data.rating != null) setRating(data.rating);
       } catch (error) {
-        console.error(error);
+        console.error('Error fetching rating:', error);
       }
     };
 
@@ -77,6 +88,19 @@ const StarRating: React.FC<StarRatingProps> = ({ userId, fountainId, jwtToken })
         }),
       });
 
+      if (!res.ok) {
+        console.error(`HTTP error! status: ${res.status}`);
+        alert('Failed to save rating: Server error');
+        return;
+      }
+
+      const contentType = res.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error('Expected JSON response but got:', contentType);
+        alert('Failed to save rating: Invalid response format');
+        return;
+      }
+
       const data = await res.json();
 
       if (data.jwtToken) {
@@ -92,9 +116,11 @@ const StarRating: React.FC<StarRatingProps> = ({ userId, fountainId, jwtToken })
       }
 
       if (data.success) {
+        // Rating saved successfully
       }
     } catch (error) {
-      alert(error);
+      console.error('Error submitting rating:', error);
+      alert('Failed to save rating: ' + error);
     }
   };
 
