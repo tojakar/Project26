@@ -15,10 +15,50 @@ const Rating = require("./models/rating.js");
 const bcrypt = require('bcrypt');
 const saltRounds = 10;
 
+
+
+async function rateFountain({ userId, fountainId, rating }) {
+    let success = '';
+    let error = '';
+
+    try {
+        const existingRating = await Rating.findOne({ userId, fountainId });
+        const fountain = await WaterFountain.findById(fountainId);
+
+        if (!fountain) {
+            throw new Error('Fountain not found');
+        }
+
+        if (existingRating) {
+            // Update
+            fountain.totalRating = fountain.totalRating - existingRating.rating + rating;
+            fountain.rating = fountain.totalRating / fountain.numRatings;
+            await fountain.save();
+
+            await Rating.updateOne({ userId, fountainId }, { rating });
+            success = 'Rating updated successfully';
+        } else {
+            // Create
+            fountain.totalRating += rating;
+            fountain.numRatings += 1;
+            fountain.rating = fountain.totalRating / fountain.numRatings;
+            await fountain.save();
+
+            await Rating.create({ userId, fountainId, rating });
+            success = 'Rating created successfully';
+        }
+    } catch (e) {
+        console.error(e);
+        error = e.toString();
+    }
+
+    return { success, error };
+}
+
 exports.setApp = function (app, client) {
     const token = require('./createJWT.js');
 
-
+    
 
     app.post('/api/addcard', async (req, res, next) => {
         // incoming: userId, color
@@ -161,7 +201,9 @@ exports.setApp = function (app, client) {
             yCoord,
             filterLevel,
             rating,
-            createdBy: userId
+            createdBy: userId,
+            numRatings: 0, // Default to 0
+            totalRating: 0 // Default to 0
         });
 
         let savedWaterFountain;
@@ -170,6 +212,17 @@ exports.setApp = function (app, client) {
         try {
             savedWaterFountain = await newWaterFountain.save();
             success = "Water fountain added successfully";
+            if (savedWaterFountain) {
+                const rateResult = await rateFountain({
+                    userId,
+                    fountainId: savedWaterFountain._id,
+                    rating
+                });
+
+                if (rateResult.error) {
+                    error += ` | Rating error: ${rateResult.error}`;
+                }
+            }
         }
         catch (e) {
             error = e.toString();
@@ -359,10 +412,7 @@ exports.setApp = function (app, client) {
         res.status(200).json(ret);
     });
 
-    // rate water fountains
     app.post('/api/rateWaterFountain', async (req, res) => {
-        // incoming: userId, fountainId, rating, jwtToken
-        // outgoing: error, success, jwtToken
         const { userId, fountainId, rating, jwtToken } = req.body;
 
         try {
@@ -373,22 +423,9 @@ exports.setApp = function (app, client) {
             console.log(e.message);
         }
 
-        let error = '';
-        let success = '';
+        let { success, error } = await rateFountain({ userId, fountainId, rating });
+
         let refreshedToken = null;
-
-        try {
-            // Upsert the rating (insert if not exists, update if it does)
-            await Rating.findOneAndUpdate(
-                { userId, fountainId },
-                { rating },
-                { upsert: true, new: true }
-            );
-            success = 'Rating saved/updated successfully';
-        } catch (e) {
-            error = e.toString();
-        }
-
         try {
             refreshedToken = token.refresh(jwtToken);
         } catch (e) {
