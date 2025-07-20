@@ -13,7 +13,6 @@ const Rating = require("./models/rating.js");
 
 //hashing stuff
 const bcrypt = require('bcrypt');
-const waterFountain = require('./models/WaterFountain.js');
 const saltRounds = 10;
 
 exports.setApp = function (app, client) {
@@ -155,7 +154,7 @@ exports.setApp = function (app, client) {
             return;
         }
 
-        const newWaterFountain = new waterFountain({
+        const newWaterFountain = new WaterFountain({
             name,
             description,
             xCoord,
@@ -209,7 +208,7 @@ exports.setApp = function (app, client) {
 
         // Step 2: Find fountain and check ownership
         try {
-            const fountain = await waterFountain.findById(id);
+            const fountain = await WaterFountain.findById(id);
             if (!fountain) {
             return res.status(404).json({ error: 'Water fountain not found', jwtToken });
             }
@@ -218,7 +217,7 @@ exports.setApp = function (app, client) {
             return res.status(403).json({ error: 'Unauthorized: You can only delete fountains you created.', jwtToken });
             }
 
-            await waterFountain.findByIdAndDelete(id);
+            await WaterFountain.findByIdAndDelete(id);
             success = 'Water fountain deleted successfully';
         } catch (e) {
             error = e.toString();
@@ -250,7 +249,7 @@ exports.setApp = function (app, client) {
                 return res.status(401).json({ error: 'The JWT is no longer valid', jwtToken: '' });
             }
 
-            waterFountainsFound = await waterFountain.find({ name: { $regex: name + '.*', $options: 'i' } });
+            waterFountainsFound = await WaterFountain.find({ name: { $regex: name + '.*', $options: 'i' } });
 
             if (waterFountainsFound.length > 0) {
                 success = `${waterFountainsFound.length} Water fountain(s) found`;
@@ -290,7 +289,7 @@ exports.setApp = function (app, client) {
         var error = '';
         var success = '';
         try {
-            const updatedWaterFountain = await waterFountain.findByIdAndUpdate(id, editedFields, { new: true });
+            const updatedWaterFountain = await WaterFountain.findByIdAndUpdate(id, editedFields, { new: true });
             if (!updatedWaterFountain) {
                 error = "Water fountain not found";
                 res.status(404).json({ error: error, jwtToken: jwtToken });
@@ -331,7 +330,7 @@ exports.setApp = function (app, client) {
         var success = '';
         let allWaterFountains = [];
         try {
-            allWaterFountains = await waterFountain.find({});
+            allWaterFountains = await WaterFountain.find({});
             if (!allWaterFountains) {
                 error = "No water fountains found";
                 res.status(404).json({ error: error, jwtToken: jwtToken });
