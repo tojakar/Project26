@@ -29,30 +29,39 @@ function Login() {
 
       const { accessToken } = response.data;
 
-// Store the string token
-storeToken({ accessToken });
+      if (!accessToken) {
+        setMessage('Login failed: No token received.');
+        return;
+      }
+
+      // Store the string token
+      storeToken({ accessToken });
 
       try {
         const decoded: any = jwtDecode(accessToken);
 
-        const userId = decoded._id;
-        const firstName = decoded.firstName;
-        const lastName = decoded.lastName;
+        // Ensure payload has expected structure
+        const { userId, firstName, lastName } = decoded;
 
-        if (userId <= 0) {
+        if (!userId) {
           setMessage('User/Password combination incorrect');
         } else {
-          const user = { firstName, lastName, id: userId };
+          const user = { firstName, lastName, userId: userId };
           localStorage.setItem('user_data', JSON.stringify(user));
           setMessage('');
           window.location.href = '/Map';
         }
       } catch (e) {
-        console.log(e);
+        console.error("Token decoding failed:", e);
+        setMessage('An error occurred during login. Please try again.');
         return;
       }
     } catch (error: any) {
-      alert(error.toString());
+      if (error.response && error.response.data && error.response.data.error) {
+        setMessage(error.response.data.error);
+      } else {
+        setMessage('An unexpected error occurred. Please try again.');
+      }
       return;
     }
   }

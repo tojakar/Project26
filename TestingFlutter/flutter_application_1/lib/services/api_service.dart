@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
-// Add this import
+import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
 
 class ApiService {
   static const String appName = 'group26.xyz';
@@ -12,7 +12,7 @@ class ApiService {
       if (kIsWeb) {
         return 'http://localhost:5001/$route';
       } else {
-        return 'http://$appName:5001/$route'; // Use your actual server address
+        return 'http://$appName:5001/$route'; 
       }
     } else {
       return 'http://$appName:5001/$route';
@@ -62,64 +62,33 @@ class ApiService {
       
       final data = jsonDecode(response.body);
       
-      if (response.statusCode == 200) {
-        // The response should contain the JWT token directly
-        String? jwtToken;
+      if (response.statusCode == 200 && data.containsKey('accessToken')) {
+        final String jwtToken = data['accessToken'];
+        final payload = decodeJWT(jwtToken);
         
-        // Check if the response is the JWT token directly or contains it
-        if (data is String) {
-          jwtToken = data; // JWT token is the entire response
-        } else if (data is Map && data.containsKey('accessToken')) {
-          jwtToken = data['accessToken']; // JWT token is in accessToken field
-        } else if (data is Map && data.containsKey('token')) {
-          jwtToken = data['token']; // JWT token is in token field
-        } else {
-          // Try to find any string that looks like a JWT token
-          for (var value in data.values) {
-            if (value is String && value.contains('.')) {
-              jwtToken = value;
-              break;
-            }
-          }
-        }
-        
-        if (jwtToken != null) {
-          // Decode the JWT to get user data
-          final payload = decodeJWT(jwtToken);
+        if (payload != null) {
+          await saveToken(jwtToken);
           
-          if (payload != null) {
-            // Save JWT token
-            await saveToken(jwtToken);
-            
-            return {
-              'success': true,
-              'id': payload['userId']?.toString() ?? '',
-              'firstName': payload['firstName']?.toString() ?? '',
-              'lastName': payload['lastName']?.toString() ?? '',
-              'accessToken': jwtToken,
-            };
-          }
+          return {
+            'success': true,
+            'userId': payload['userId']?.toString() ?? '',
+            'firstName': payload['firstName']?.toString() ?? '',
+            'lastName': payload['lastName']?.toString() ?? '',
+            'accessToken': jwtToken,
+          };
+        } else {
+          return {'success': false, 'error': 'Failed to decode token'};
         }
-        
-        return {
-          'success': false,
-          'message': 'Invalid token format',
-        };
       } else {
-        return {
-          'success': false,
-          'message': data['error'] ?? 'Login failed',
-        };
+        return {'success': false, 'error': data['error'] ?? 'Unknown login error'};
       }
     } catch (e) {
-      return {
-        'success': false,
-        'message': 'Network error: ${e.toString()}',
-      };
+      print('Login error: $e');
+      return {'success': false, 'error': 'An error occurred during login.'};
     }
   }
 
-  // Register user - handles the response format from your backend
+  // Register user
   static Future<Map<String, dynamic>> register({
     required String firstName,
     required String lastName,
@@ -140,48 +109,107 @@ class ApiService {
         }),
       );
       
-      final data = jsonDecode(response.body);
-      
-      if (response.statusCode == 200) {
-        return {
-          'success': true,
-          'message': data['message'] ?? 'Registration successful',
-        };
+      if (response.statusCode == 201) {
+        return {'success': true};
       } else {
-        return {
-          'success': false,
-          'message': data['error'] ?? 'Registration failed',
-        };
+        final data = jsonDecode(response.body);
+        return {'success': false, 'error': data['error'] ?? 'Unknown registration error'};
       }
     } catch (e) {
-      return {
-        'success': false,
-        'message': 'Network error: ${e.toString()}',
-      };
+      print('Registration error: $e');
+      return {'success': false, 'error': 'An error occurred during registration.'};
     }
   }
 
-  // Save JWT token to SharedPreferences
-  static Future<void> saveToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('jwt_token', token);
+  // Add a new water fountain
+  static Future<Map<String, dynamic>> addWaterFountain(Map<String, dynamic> fountainData) async {
+    final token = await getToken();
+    if (token == null) {
+      return {'success': false, 'error': 'Not authenticated'};
+    }
+
+    // Add the token to the data being sent
+    fountainData['jwtToken'] = token;
+
+    try {
+      final response = await http.post(
+        Uri.parse(buildPath('api/addWaterFountain')),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(fountainData),
+      );
+      
+      final data = jsonDecode(response.body);
+
+      if (data.containsKey('jwtToken')) {
+        final dynamic tokenData = data['jwtToken'];
+        if (tokenData is String) {
+          await saveToken(tokenData);
+        } else if (tokenData is Map && tokenData.containsKey('accessToken')) {
+          await saveToken(tokenData['accessToken']);
+        }
+      }
+
+      if (response.statusCode == 200 && (data['error'] == null || data['error'] == '')) {
+        return {'success': true, 'fountain': data['addedWaterFountain']};
+      } else {
+        return {'success': false, 'error': data['error'] ?? 'Failed to add fountain'};
+      }
+    } catch (e) {
+      print('Add fountain error: $e');
+      return {'success': false, 'error': 'An error occurred while adding the fountain.'};
+    }
   }
 
-  // Get JWT token from SharedPreferences
-  static Future<String?> getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('jwt_token');
+  // Get all water fountains
+  static Future<List<dynamic>> getAllWaterFountains() async {
+    final token = await getToken();
+    if (token == null) {
+      return [];
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse(buildPath('api/getAllWaterFountains')),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'jwtToken': token}),
+      );
+      
+      final data = jsonDecode(response.body);
+
+      if (data.containsKey('jwtToken')) {
+        final dynamic tokenData = data['jwtToken'];
+        if (tokenData is String) {
+          await saveToken(tokenData);
+        } else if (tokenData is Map && tokenData.containsKey('accessToken')) {
+          await saveToken(tokenData['accessToken']);
+        }
+      }
+
+      if (response.statusCode == 200 && (data['error'] == null || data['error'] == '')) {
+        return data['allWaterFountains'] ?? [];
+      } else {
+        print('Error fetching fountains: ${data['error']}');
+        return [];
+      }
+    } catch (e) {
+      print('Get all fountains error: $e');
+      return [];
+    }
   }
 
   // Save user data to SharedPreferences
   static Future<void> saveUserData({
-    required String id,
+    required String userId,
     required String firstName,
     required String lastName,
     required String email,
   }) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_id', id);
+    await prefs.setString('user_id', userId);
     await prefs.setString('user_firstName', firstName);
     await prefs.setString('user_lastName', lastName);
     await prefs.setString('user_email', email);
@@ -191,84 +219,28 @@ class ApiService {
   static Future<Map<String, String?>> getUserData() async {
     final prefs = await SharedPreferences.getInstance();
     return {
-      'id': prefs.getString('user_id'),
+      'userId': prefs.getString('user_id'),
       'firstName': prefs.getString('user_firstName'),
       'lastName': prefs.getString('user_lastName'),
       'email': prefs.getString('user_email'),
     };
   }
 
-  static Future<Map<String, dynamic>> getAllWaterFountains() async {
-    try {
-      final jwtToken = await getToken();
-      if (jwtToken == null) {
-        return {
-          'success': false,
-          'message': 'User not logged in',
-        };
-      }
-
-      final response = await http.post(
-        Uri.parse(buildPath('api/getAllWaterFountains')),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'jwtToken': jwtToken,
-        }),
-      );
-
-      final data = jsonDecode(response.body);
-
-      if (response.statusCode == 200) {
-        return {
-          'success': true,
-          'waterFountains': data['allWaterFountains'], // or adjust to match your backend response
-        };
-      } else {
-        return {
-          'success': false,
-          'message': data['error'] ?? 'Failed to fetch fountains',
-        };
-      }
-    } 
-    catch (e) {
-      return {
-        'success': false,
-        'message': 'Network error: ${e.toString()}',
-      };
-    }
+  // Save token to SharedPreferences
+  static Future<void> saveToken(String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('jwt_token', token);
   }
 
-  static Future<Map<String, dynamic>> addWaterFountain(Map<String, dynamic> fountainData) async {
-    final apiUrl = buildPath('api/addWaterFountain');
-    final headers = {
-      'Content-Type': 'application/json',
-    };
+  // Get token from SharedPreferences
+  static Future<String?> getToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('jwt_token');
+  }
 
-    try {
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: headers,
-        body: jsonEncode(fountainData),
-      );
-
-      if (response.statusCode == 200) {
-        final result = jsonDecode(response.body);
-        // Optional: update JWT if returned
-        if (result['jwtToken'] != null) {
-          await saveToken(result['jwtToken']);
-        }
-        return result;
-      } else {
-        return {
-          'error': 'Server returned status ${response.statusCode}: ${response.reasonPhrase}'
-        };
-      }
-    } catch (e) {
-      return {
-        'error': 'Exception: ${e.toString()}'
-      };
-    }
+  // Clear token from SharedPreferences
+  static Future<void> clearToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('jwt_token');
   }
 }

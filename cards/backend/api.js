@@ -2,6 +2,7 @@ require('express');
 const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.SENDGRID_API);
 require('mongodb');
+const jwt = require("jsonwebtoken");
 //load user model
 const User = require("./models/user.js");
 //load card model
@@ -187,74 +188,88 @@ exports.setApp = function (app, client) {
         res.status(200).json(ret);
     });
     app.post('/api/deleteWaterFountain', async (req, res, next) => {
-        // incoming: id
-        // outgoing: error, success, jwtToken 
-        // id is the _id of the water fountain to delete
         const { id, jwtToken } = req.body;
+        let error = '';
+        let success = '';
+
+        // Step 1: Verify token
+        let userId;
         try {
             if (token.isExpired(jwtToken)) {
-                var r = { error: 'The JWT is no longer valid', jwtToken: '' };
-                res.status(401).json(r);
-                return;
+            return res.status(401).json({ error: 'The JWT is no longer valid', jwtToken: '' });
             }
-        }
-        catch (e) {
+
+            // Decode token to get userId
+            const decoded = jwt.decode(jwtToken, { complete: true });
+            userId = decoded.payload.userId;
+        } catch (e) {
             console.log(e.message);
+            return res.status(400).json({ error: 'Invalid token', jwtToken: '' });
         }
-        var error = '';
-        var success = '';
+
+        // Step 2: Find fountain and check ownership
         try {
-            const deleted = await waterFountain.findByIdAndDelete(id);
-            if (!deleted) {
-                error = "Water fountain not found";
-                res.status(404).json({ error: error, jwtToken: jwtToken });
-                return;
+            const fountain = await waterFountain.findById(id);
+            if (!fountain) {
+            return res.status(404).json({ error: 'Water fountain not found', jwtToken });
             }
-            success = "Water fountain deleted successfully";
-        }
-        catch (e) {
+
+            if (fountain.createdBy.toString() !== userId) {
+            return res.status(403).json({ error: 'Unauthorized: You can only delete fountains you created.', jwtToken });
+            }
+
+            await waterFountain.findByIdAndDelete(id);
+            success = 'Water fountain deleted successfully';
+        } catch (e) {
             error = e.toString();
         }
-        var refreshedToken = null;
+
+        // Step 3: Refresh token
+        let refreshedToken = '';
         try {
             refreshedToken = token.refresh(jwtToken);
-        }
-        catch (e) {
+        } catch (e) {
             console.log(e.message);
         }
-        var ret = { success: success, error: error, jwtToken: refreshedToken };
-        res.status(200).json(ret);
-    });
+
+        return res.status(200).json({ success, error, jwtToken: refreshedToken });
+        });
 
     app.post('/api/searchWaterFountainByName', async (req, res, next) => {
         // incoming: name
         // outgoing: waterFountainsFound, error, success, jwtToken
         const { name, jwtToken } = req.body;
+        
+        let refreshedToken = null;
+        let error = '';
+        let success = '';
+        let waterFountainsFound = [];
+
         try {
             if (token.isExpired(jwtToken)) {
-                var r = { error: 'The JWT is no longer valid', jwtToken: '' };
-                res.status(401).json(r);
-                return;
+                return res.status(401).json({ error: 'The JWT is no longer valid', jwtToken: '' });
             }
-        }
-        catch (e) {
+
+            waterFountainsFound = await waterFountain.find({ name: { $regex: name + '.*', $options: 'i' } });
+
+            if (waterFountainsFound.length > 0) {
+                success = `${waterFountainsFound.length} Water fountain(s) found`;
+            }
+            // No error is sent if no fountains are found. An empty array is the correct response.
+
+            refreshedToken = token.refresh(jwtToken);
+
+        } catch (e) {
+            error = e.toString();
             console.log(e.message);
-        }
-        const waterFountainsFound = await waterFountain.find({ name: { $regex: name + '.*', $options: 'i' } });
-        if (waterFountainsFound.length === 0) {
-            res.status(404).json({ error: "No water fountains found with that name", jwtToken: jwtToken });
-            return;
         }
 
-        var refreshedToken = null;
-        try {
-            refreshedToken = token.refresh(jwtToken);
-        }
-        catch (e) {
-            console.log(e.message);
-        }
-        success = `${waterFountainsFound.length} Water fountains found`;
-        var ret = { found: waterFountainsFound, success: success, jwtToken: refreshedToken };
+        const ret = { 
+            found: waterFountainsFound, 
+            success: success, 
+            error: error, 
+            jwtToken: refreshedToken 
+        };
         res.status(200).json(ret);
     });
 

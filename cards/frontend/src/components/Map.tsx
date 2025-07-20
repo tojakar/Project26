@@ -83,6 +83,8 @@ const StarSelector: React.FC<{
   );
 };
 
+
+
 const Map: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<any>(null);
@@ -128,8 +130,89 @@ const Map: React.FC = () => {
     });
   };
 
+  const deleteWaterFountain = async (
+    fountainId: string,
+    markerToRemove?: any, // optional Leaflet marker
+    setAllFountainMarkers?: React.Dispatch<React.SetStateAction<any[]>>
+  ): Promise<void> => {
+    try {
+      const token = getJwtToken();
+      if (!token) {
+        showStatus('Please log in to delete fountains', 'error');
+        return;
+      }
+
+      const apiUrl = buildPath('api/deleteWaterFountain');
+      console.log('Calling DELETE URL:', apiUrl);
+
+      const response = await axios.post<ApiResponse>(apiUrl, {
+        id: fountainId,
+        jwtToken: token
+      }, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 10000
+      });
+
+      const result: ApiResponse = response.data;
+
+      // 🔁 Refresh token if returned
+      if (result.jwtToken) {
+        setJwtToken(result.jwtToken);
+        console.log('Token refreshed during delete');
+      }
+
+      // ❌ Handle backend error
+      if (result.error) {
+        if (result.error.toLowerCase().includes('jwt') ||
+          result.error.toLowerCase().includes('token') ||
+          result.error.toLowerCase().includes('expired')) {
+          showStatus('Session expired. Please log in again.', 'error');
+          return;
+        }
+        throw new Error(result.error);
+      }
+
+      // ✅ Handle success
+      if (result.success) {
+        showStatus(result.success, 'success');
+      } else {
+        showStatus('Fountain deleted', 'success');
+      }
+
+      // 🗑️ Remove marker from map
+      if (markerToRemove && map) {
+        map.removeLayer(markerToRemove);
+      }
+
+      // Optionally update local state marker array
+      if (setAllFountainMarkers && markerToRemove) {
+        setAllFountainMarkers(prev => prev.filter(m => m !== markerToRemove));
+      }
+
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 401) {
+          showStatus('Session expired. Please log in again.', 'error');
+        } else if (error.response?.status === 400) {
+          const errorMessage = error.response?.data?.error || 'Invalid request data';
+          showStatus('Error: ' + errorMessage, 'error');
+        } else if (error.response?.status === 500) {
+          showStatus('Server error. Please try again later.', 'error');
+        } else {
+          const errorMessage = error.response?.data?.error || error.message;
+          showStatus('Error deleting fountain: ' + errorMessage, 'error');
+        }
+      } else {
+        showStatus('Error deleting fountain: ' + (error as Error).message, 'error');
+      }
+    }
+  };
+
   const addFountainMarker = (fountain: WaterFountain) => {
     if (!map || !window.L) return null;
+    const userData = JSON.parse(localStorage.getItem("user_data") || "{}");
 
     const fountainIcon = (window.L as any).divIcon({
       html: '💧',
@@ -141,57 +224,82 @@ const Map: React.FC = () => {
       icon: fountainIcon
     }).addTo(map)
       .bindPopup(`
-      <div>
-        <div hidden>${fountain._id}</div>
-        <h3>${fountain.name}</h3>
-        <p>${fountain.description}</p>
-        <p>Filter Level: ${fountain.filterLevel}/3</p>
-        <p>Rating: ${fountain.rating}/5 💧</p>
-        <div id="rating-${fountain._id}"></div>
-        <div id="edit-button-${fountain._id}"></div>
-      </div>
-    `);
+        <div style="width: 190px; text-align: center;">
+          <div hidden>${fountain.createdBy}</div>
+          <div hidden>${fountain._id}</div>
+          <h3 style="margin: 4px 0;">${fountain.name}</h3>
+          <p style="margin: 2px 0;">${fountain.description}</p>
+          <p style="margin: 2px 0;">Filter Level: ${fountain.filterLevel}/3</p>
+          <p style="margin: 2px 0;">Rating: ${fountain.rating}/5 💧</p>
+          <div id="rating-${fountain._id}" style="margin-top: 6px;"></div>
+          <div id="button-container-${fountain._id}" style="display: flex; justify-content: center; gap: 8px; margin-top: 8px;"></div>
+        </div>
+      `);
 
     marker.on('popupopen', () => {
-      const container = document.getElementById(`rating-${fountain._id}`);
-      const editContainer = document.getElementById(`edit-button-${fountain._id}`);
-      const token = retrieveToken();
-      const userData = JSON.parse(localStorage.getItem("user_data") || "{}");
+      // 🔄 Recenter map on popup
+      map.setView(marker.getLatLng(), map.getZoom(), { animate: true });
 
-      if (container && userData?.id && token) {
-        const root = ReactDOM.createRoot(container);
+      const token = retrieveToken();
+      const ratingContainer = document.getElementById(`rating-${fountain._id}`);
+      const buttonContainer = document.getElementById(`button-container-${fountain._id}`);
+
+      // ⭐ React Star Rating
+      if (ratingContainer && userData?.userId && token) {
+        const root = ReactDOM.createRoot(ratingContainer);
         root.render(
           <StarRating
-            userId={userData.id}
+            userId={userData.userId}
             fountainId={fountain._id}
             jwtToken={token}
           />
         );
       }
 
-      if (editContainer && userData?.id && fountain.createdBy === userData.id) {
-        const editRoot = ReactDOM.createRoot(editContainer);
-        editRoot.render(
-          <button
-            onClick={() => openEditModal(fountain)}
-            style={{
-              background: '#4a6fa5',
-              color: 'white',
-              border: 'none',
-              padding: '8px 16px',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              marginTop: '8px'
-            }}
-          >
-            ✏️ Edit Fountain
-          </button>
-        );
-      }
-    });
+      // ✏️ 🗑️ Buttons
+      if (
+        buttonContainer &&
+        userData?.userId &&
+        fountain.createdBy === userData.userId
+      ) {
+        buttonContainer.innerHTML = `
+          <button id="edit-${fountain._id}" style="
+            background: #4a6fa5;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            min-width: 70px;
+          ">✏️ Edit</button>
+          <button id="delete-${fountain._id}" style="
+            background: #c0392b;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            min-width: 70px;
+          ">🗑️ Delete</button>
+        `;
 
-    return marker;
-  };
+        document.getElementById(`edit-${fountain._id}`)?.addEventListener('click', () => {
+          openEditModal(fountain);
+        });
+
+        document.getElementById(`delete-${fountain._id}`)?.addEventListener('click', async () => {
+          const confirmDelete = window.confirm('Are you sure you want to delete this fountain?');
+          if (!confirmDelete) return;
+          await deleteWaterFountain(fountain._id, marker, setAllFountainMarkers);
+        });
+    }
+  });
+
+  return marker;
+};
+
 
   const openEditModal = (fountain: WaterFountain) => {
     setEditingFountain(fountain);
@@ -895,5 +1003,6 @@ const Map: React.FC = () => {
     </div>
   );
 };
+
 
 export default Map;

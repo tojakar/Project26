@@ -56,7 +56,7 @@ class _LoginPageState extends State<LoginPage> {
       if (result['success'] == true) {
         // Save user data
         await ApiService.saveUserData(
-          id: result['id'],
+          userId: result['userId'],
           firstName: result['firstName'],
           lastName: result['lastName'],
           email: email,
@@ -70,7 +70,7 @@ class _LoginPageState extends State<LoginPage> {
           );
         }
       } else {
-        setState(() => _errorMessage = result['message'] ?? 'Login failed');
+        setState(() => _errorMessage = result['error'] ?? 'Login failed');
       }
     } catch (e) {
       print('Login error: $e'); // Debug print

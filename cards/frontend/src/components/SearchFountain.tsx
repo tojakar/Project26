@@ -102,15 +102,19 @@ const SearchFountain: React.FC<Props> = ({
         if (error.response?.status === 401) {
           showStatus("Session expired. Please log in again.", "error");
         } else if (error.response?.status === 404) {
+          // This case handles when the search endpoint itself is not found,
+          // which is different from finding no results.
           showStatus("Search service not available.", "error");
         } else {
-          const errorMessage = error.response?.data?.error || error.message;
-          showStatus("Search failed: " + errorMessage, "error");
+          // For other errors, display the message from the backend if available
+          const errorMessage = error.response?.data?.error || 'An unknown error occurred.';
+          showStatus(errorMessage, "error");
         }
       } else {
-        showStatus("Search failed. Please try again.", "error");
+        showStatus("An unexpected error occurred during search.", "error");
       }
       console.error("Search error:", error);
+      onResults([]); // Ensure results are cleared on error
     } finally {
       setLoading(false);
     }

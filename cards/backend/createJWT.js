@@ -41,15 +41,7 @@ return isError;
 exports.refresh = function( token )
 {
 var ud = jwt.decode(token,{complete:true});
-var userId = ud.payload.id;
-var firstName = ud.payload.firstName;
-var lastName = ud.payload.lastName;
-return _createToken( firstName, lastName, userId );
-}
-exports.refresh = function( token )
-{
-var ud = jwt.decode(token,{complete:true});
-var userId = ud.payload.id;
+var userId = ud.payload.userId;
 var firstName = ud.payload.firstName;
 var lastName = ud.payload.lastName;
 return _createToken( firstName, lastName, userId );

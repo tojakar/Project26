@@ -31,15 +31,7 @@ class _MapPageState extends State<MapPage> {
 
   Future<List<dynamic>> _fetchWaterFountains() async {
     final result = await ApiService.getAllWaterFountains();
-
-    if (result['success']) {
-      
-      return result['waterFountains']; // return the actual data
-    } 
-    else {
-      print('❌ Failed to fetch fountains: ${result['message']}');
-      return [];
-    }
+    return result;
   }
 
   void addFountainMarker(Map<String, dynamic> fountain) {
@@ -48,7 +40,7 @@ class _MapPageState extends State<MapPage> {
     final String name = fountain['name'] ?? 'Unknown';
     final String description = fountain['description'] ?? '';
     final int filterLevel = fountain['filterLevel'] ?? 0;
-    final int rating = fountain['rating'] ?? 0;
+    final int rating = (fountain['rating'] as num?)?.toInt() ?? 0;
 
     final marker = Marker(
       width: 100,
@@ -261,21 +253,15 @@ class _MapPageState extends State<MapPage> {
 
     print('📊 Result type: ${result.runtimeType}');
 
-    // Don't crash if fields are missing
-    try {
-      final added = result['addedWaterFountain'];
+    if (result['success'] == true) {
       _showStatus('Fountain added!', 'success');
+      final added = result['fountain'];
       if (added is Map<String, dynamic>) {
         print('🎯 Adding returned fountain marker');
         addFountainMarker(added);
-      } else {
-        print('🧩 Adding fallback fountain marker');
-        addFountainMarker(fountainData);
       }
-    } catch (e) {
-      print('⚠️ Unexpected format or missing fields: $e');
-      _showStatus('Fountain added, but response was weird.', 'success');
-      addFountainMarker(fountainData);
+    } else {
+      _showStatus('Error: ${result['error']}', 'error');
     }
 
     print('✅ End: Add fountain logic');
