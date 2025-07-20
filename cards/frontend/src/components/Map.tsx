@@ -6,7 +6,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import SearchFountain from './SearchFountain';
 import ReactDOM from 'react-dom/client';
-import StarRating from './StarRating.tsx';
+import StarRating from './StarRating';
 
 function doLogout(event: any): void {
   event.preventDefault();
