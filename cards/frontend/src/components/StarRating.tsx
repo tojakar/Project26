@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import { buildPath } from './Path';
 import { retrieveToken, storeToken } from '../tokenStorage';
 
@@ -32,29 +33,18 @@ const StarRating: React.FC<StarRatingProps> = ({ userId, fountainId, jwtToken })
   useEffect(() => {
     const fetchRating = async () => {
       try {
-        const currentToken = retrieveToken();
-        const res = await fetch(buildPath('api/getUserRating'), {
-          method: 'POST',
+        const currentToken = retrieveToken() || jwtToken;
+
+        const response = await axios.post(buildPath('api/getUserRating'), {
+          userId,
+          fountainId,
+          jwtToken: currentToken,
+        }, {
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId,
-            fountainId,
-            jwtToken: currentToken || jwtToken
-          }),
+          timeout: 10000,
         });
 
-        if (!res.ok) {
-          console.error(`HTTP error! status: ${res.status}`);
-          return;
-        }
-
-        const contentType = res.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          console.error('Expected JSON response but got:', contentType);
-          return;
-        }
-
-        const data = await res.json();
+        const data = response.data;
 
         if (data.jwtToken) {
           const token = typeof data.jwtToken === 'string'
@@ -64,8 +54,12 @@ const StarRating: React.FC<StarRatingProps> = ({ userId, fountainId, jwtToken })
         }
 
         if (data.rating != null) setRating(data.rating);
-      } catch (error) {
-        console.error('Error fetching rating:', error);
+      } catch (error: any) {
+        if (axios.isAxiosError(error)) {
+          console.error('Error fetching rating:', error.response?.data || error.message);
+        } else {
+          console.error('Unexpected error fetching rating:', error);
+        }
       }
     };
 
@@ -76,32 +70,19 @@ const StarRating: React.FC<StarRatingProps> = ({ userId, fountainId, jwtToken })
     setRating(newRating);
 
     try {
-      const currentToken = retrieveToken();
-      const res = await fetch(buildPath('api/rateWaterFountain'), {
-        method: 'POST',
+      const currentToken = retrieveToken() || jwtToken;
+
+      const response = await axios.post(buildPath('api/rateWaterFountain'), {
+        userId,
+        fountainId,
+        rating: newRating,
+        jwtToken: currentToken,
+      }, {
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          fountainId,
-          rating: newRating,
-          jwtToken: currentToken || jwtToken
-        }),
+        timeout: 10000,
       });
 
-      if (!res.ok) {
-        console.error(`HTTP error! status: ${res.status}`);
-        alert('Failed to save rating: Server error');
-        return;
-      }
-
-      const contentType = res.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        console.error('Expected JSON response but got:', contentType);
-        alert('Failed to save rating: Invalid response format');
-        return;
-      }
-
-      const data = await res.json();
+      const data = response.data;
 
       if (data.jwtToken) {
         const token = typeof data.jwtToken === 'string'
@@ -115,12 +96,14 @@ const StarRating: React.FC<StarRatingProps> = ({ userId, fountainId, jwtToken })
         return;
       }
 
-      if (data.success) {
-        // Rating saved successfully
+      // Optional: show confirmation message if needed
+    } catch (error: any) {
+      if (axios.isAxiosError(error)) {
+        console.error('Error submitting rating:', error.response?.data || error.message);
+        alert('Failed to save rating: ' + (error.response?.data?.error || error.message));
+      } else {
+        alert('Failed to save rating: ' + error);
       }
-    } catch (error) {
-      console.error('Error submitting rating:', error);
-      alert('Failed to save rating: ' + error);
     }
   };
 
