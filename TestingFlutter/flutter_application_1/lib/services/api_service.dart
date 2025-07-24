@@ -243,4 +243,86 @@ class ApiService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('jwt_token');
   }
+
+   // Delete a water fountain by ID
+  static Future<Map<String, dynamic>> deleteWaterFountain(String fountainId, String token) async {
+    try {
+      final response = await http.post(
+        Uri.parse(buildPath('api/deleteWaterFountain')),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'id': fountainId,
+          'jwtToken': token,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (data.containsKey('jwtToken')) {
+        final dynamic tokenData = data['jwtToken'];
+        if (tokenData is String) {
+          await saveToken(tokenData);
+        } else if (tokenData is Map && tokenData.containsKey('accessToken')) {
+          await saveToken(tokenData['accessToken']);
+        }
+      }
+
+     if (response.statusCode == 200 && (data['error'] == null || data['error'] == '')) {
+        return {'success': true}; // No 'fountain' key returned by backend
+      } else {
+        return {
+          'success': false,
+          'error': data['error'] ?? 'Failed to delete fountain'
+        };
+      }
+    } catch (e) {
+      print('Delete fountain error: $e');
+      return {'success': false, 'error': 'An error occurred while deleting the fountain.'};
+    }
+  }
+
+  // Edit a water fountain's name and description
+  static Future<Map<String, dynamic>> editWaterFountain(String fountainId, Map<String, dynamic> updateData) async {
+    try {
+      final response = await http.post(
+        Uri.parse(buildPath('api/editWaterFountain')),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'id': fountainId,
+          'editedFields': {
+            'name': updateData['name'],
+            'description': updateData['description'],
+          },
+          'jwtToken': updateData['jwtToken'],
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (data.containsKey('jwtToken')) {
+        final dynamic tokenData = data['jwtToken'];
+        if (tokenData is String) {
+          await saveToken(tokenData);
+        } else if (tokenData is Map && tokenData.containsKey('accessToken')) {
+          await saveToken(tokenData['accessToken']);
+        }
+      }
+
+     if (response.statusCode == 200 && (data['error'] == null || data['error'] == '')) {
+        return {'success': true};
+      } else {
+        return {
+          'success': false,
+          'error': data['error'] ?? 'Failed to edit fountain'
+        };
+      }
+    } catch (e) {
+      print('Edit fountain error: $e');
+      return {'success': false, 'error': 'An error occurred while editing the fountain.'};
+    }
+  }
 }
