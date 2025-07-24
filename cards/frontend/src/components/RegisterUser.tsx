@@ -64,7 +64,7 @@ function Register() {
 
       // Registration successful - your API returns { message: 'User created successfully', user: newUser }
       if (response.data.message) {
-        setMessage('Registration successful! Redirecting to login...');
+        setMessage('Please verify your email');
         setTimeout(() => {
           navigate('/login');
         }, 2000);
@@ -105,7 +105,7 @@ function Register() {
       <span id="inner-title">Register</span><br />
       First Name: <input type="text" id="firstName" placeholder="First Name" onChange={handleSetFirstName} /><br />
       Last Name: <input type="text" id="lastName" placeholder="Last Name" onChange={handleSetLastName} /><br />
-      Email: <input type="text" id="registerEmail" placeholder="Email" onChange={handleSetEmail} /><br />
+      Email: <input type="text" id="registerEmail" placeholder="Example@gmail.com" onChange={handleSetEmail} /><br />
       Password: <input type="password" id="registerPassword" placeholder="Password" onChange={handleSetPassword} /><br />
       Confirm Password: <input type="password" id="confirmPassword" placeholder="Confirm Password" onChange={handleSetConfirmPassword} />
       
