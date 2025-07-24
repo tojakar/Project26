@@ -174,12 +174,12 @@ exports.setApp = function (app, client) {
             try {
                 const token = require("./createJWT.js");
                 ret = token.createToken(firstName, lastName, newUser._id);
-                const verifyURL = 'https://group26.xyz/verify-email?token=${ret}';
+                const verifyURL = `https://group26.xyz/verify-email?token=${ret}`;
                 const msg = {
                     to: email,
                     from: sender,
                     subject: 'Please verify your email for Water Watch',
-                    html: '<p> Hello new user, </p> <br> <p> Please <a href = "${verifyURL}">click this</a> to verify your account.</p>'
+                    html: `<p> Hello new user, </p> <br> <p> Please <a href = "${verifyURL}">click this</a> to verify your account.</p>`
                 };
                 await sgMail.send(msg);
                 res.status(200).json({ message: 'Registration successful. Check your email to verify your account.' });
