@@ -1,6 +1,7 @@
 require('express');
 const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.SENDGRID_API);
+const sender = process.env.EMAIL_SENDER;
 require('mongodb');
 const jwt = require("jsonwebtoken");
 //load user model
@@ -116,6 +117,10 @@ exports.setApp = function (app, client) {
             res.status(400).json({ error: "Email/Password incorrect" });
             return;
         }
+        if (!results[0].verified){
+            res.status(400).json({ error: "Please verify your email first." });
+            return;
+        }
 
         var id = -1;
         var fn = '';
@@ -157,11 +162,33 @@ exports.setApp = function (app, client) {
                 firstName: firstName,
                 lastName: lastName,
                 email: email,
-                password: hashedPassword  //hashed password
+                password: hashedPassword,  //hashed password
+                verified: false
             });
 
             await newUser.save();
             res.status(200).json({ message: 'User created successfully', user: newUser });
+            
+            var ret;
+
+            try {
+                const token = require("./createJWT.js");
+                ret = token.createToken(firstName, lastName, newUser._id);
+                const verifyURL = 'https://group26.xyz/verify-email?token=${ret}';
+                const msg = {
+                    to: email,
+                    from: sender,
+                    subject: 'Please verify your email for Water Watch',
+                    html: '<p> Hello new user, </p> <br> <p> Please <a href = "${verifyURL}">click this</a> to verify your account.</p>'
+                };
+                await sgMail.send(msg);
+                res.status(200).json({ message: 'Registration successful. Check your email to verify your account.' });
+            }
+            catch (e)
+            {
+                ret = {error:e.message};
+            }
+            res.status(200).json(ret);
 
         } catch (err) {
             res.status(500).json({ error: err.message });
@@ -464,6 +491,43 @@ exports.setApp = function (app, client) {
         }
 
         res.status(200).json({ rating: userRating?.rating || null, error, jwtToken: refreshedToken });
+    });
+    app.get('/api/verify-email', async(req, res) =>{
+        const verify_token = req.query.token;
+        if (!verify_token) {
+            return res.status(400).send("Missing token.");
+        }
+        if (token.isExpired(verify_token))
+        {
+            return res.status(400).send("Token expired");
+        }
+
+        const jwt = require("jsonwebtoken");
+        let decoded;
+        try {
+            decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+        } catch (err){
+            return res.status(400).send("Invalid token.");
+        }
+        try {
+            const user = await User.findById(decoded._id);
+            if (!user)
+            {
+                return res.status(404).send("User not found.");
+            }
+            if (user.verified)
+            {
+                return res.status(200).send("Email already verified.");
+            }
+            user.verified = true;
+            await user.save();
+            return res.status(200).send("Email verified successfully.");
+
+        } catch (err)
+        {
+            return res.status(500).send("Server error.");
+        }
+
     });
 }
 
