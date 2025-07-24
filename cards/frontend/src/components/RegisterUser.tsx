@@ -17,17 +17,30 @@ function Register() {
     navigate('/login');
   };
 
+  const passwordCheck = (password: string): boolean => {
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasNumber = /\d/.test(password);
+    return hasUpperCase && hasNumber;
+  }
+
   async function doRegister(event: any): Promise<void> {
     event.preventDefault();
 
     // Basic validation
     if (!firstName || !lastName || !email || !password) {
-      setMessage('Please fill in all fields');
+      setMessage('\nPlease fill in all fields');
+      return;
+    }
+
+
+    // add password complexity checks uppercase letter and number
+    if(!passwordCheck(password)) {
+      setMessage('\nPassword must contain at least one uppercase letter and one number')
       return;
     }
 
     if (password !== confirmPassword) {
-      setMessage('Passwords do not match');
+      setMessage('\nPasswords do not match');
       return;
     }
 
