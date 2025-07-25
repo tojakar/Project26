@@ -151,7 +151,6 @@ exports.setApp = function (app, client) {
             if (!email || !password || !firstName || !lastName) {
                 return res.status(400).json({ error: 'All fields are required' });
             }
-            const existing = await User.findOne({ email: email });
 
             const existing = await User.findOne({ email });
             if (existing) {
