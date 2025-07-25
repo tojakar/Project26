@@ -145,15 +145,15 @@ const SearchFountain: React.FC<Props> = ({
       <button
         onClick={handleSearch}
         disabled={loading || !searchQuery.trim()}
-        className="button-secondary"
+        className="buttons"
       >
         {loading ? "Searching..." : "Search"}
       </button>
       {/* Single clear button that shows appropriate text based on search state */}
       {(searchQuery || isSearchActive) && (
-        <button
+        <button 
           onClick={handleClear}
-          className="button-secondary"
+          className="buttons"
           style={{ marginLeft: "8px" }}
         >
           {isSearchActive

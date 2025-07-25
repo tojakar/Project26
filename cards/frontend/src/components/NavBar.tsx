@@ -13,7 +13,7 @@ function NavBar() {
   
   return (
     <div style={{ 
-        position: 'fixed', 
+        position: 'relative', 
         top: 65, 
         left: 570,
         }}>
