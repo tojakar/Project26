@@ -97,6 +97,7 @@ class _WaterFountainSearchBarState extends State<WaterFountainSearchBar> {
       children: [
         Expanded(
           child: TextField(
+            autofocus: false,
             controller: _controller,
             onSubmitted: (_) => _handleSearch(),
             decoration: InputDecoration(
