@@ -21,6 +21,7 @@ class _MapPageState extends State<MapPage> {
   @override
   void initState() {
     super.initState();
+<<<<<<< HEAD
     _loadAllFountains();
   }
 
@@ -30,26 +31,107 @@ class _MapPageState extends State<MapPage> {
       _markers.clear();
       for (final f in all) {
         addFountainMarker(f);
+=======
+    _fetchWaterFountains().then((waterFountains) {
+      for (int i = 0; i < waterFountains.length; i++) {
+        addFountainMarker(waterFountains[i]);
+>>>>>>> 8e17f069d076a1a8d428a3bacccaee81b7431bd0
       }
     });
   }
 
   Future<List<dynamic>> _fetchWaterFountains() async {
-    final result = await ApiService.getAllWaterFountains();
-    return result;
+    return await ApiService.getAllWaterFountains();
   }
 
-  void addFountainMarker(Map<String, dynamic> fountain) {
+  void _deleteFountain(String fountainId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("Confirm Delete"),
+        content: const Text("Are you sure you want to delete this fountain?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
+          ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text("Delete")),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    final token = await ApiService.getToken();
+    if (token == null) {
+      _showStatus("You must be logged in to delete fountains", "error");
+      return;
+    }
+
+    final result = await ApiService.deleteWaterFountain(fountainId, token);
+
+    if (result['success'] == true) {
+      _showStatus("Fountain deleted", "success");
+      setState(() {
+        _markers.removeWhere((m) => (m.key as ValueKey).value == fountainId);
+      });
+    } else {
+      _showStatus("Failed to delete fountain", "error");
+    }
+
+  }
+
+  void _editFountain(Map<String, dynamic> fountain) async {
+    final formData = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => EditFountainDialog(initialData: fountain),
+    );
+
+    if (formData == null) return;
+
+    final token = await ApiService.getToken();
+    final result = await ApiService.editWaterFountain(fountain['_id'], {
+      'name': formData['name'],
+      'description': formData['description'],
+      'jwtToken': token,
+    });
+
+   if (result['success'] == true) {
+      _showStatus("Fountain updated!", "success");
+
+      setState(() {
+        _markers.removeWhere((m) => (m.key as ValueKey).value == fountain['_id']);
+      });
+
+      // Schedule adding the marker in the next frame to avoid duplicate key during build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final updatedFountain = {
+          ...fountain,
+          'name': formData['name'],
+          'description': formData['description'],
+        };
+        addFountainMarker(updatedFountain);
+      });
+    }
+    else {
+      _showStatus("Failed to update fountain", "error");
+    }
+  }
+
+  void addFountainMarker(Map<String, dynamic> fountain) async {
     final double lat = fountain['yCoord']?.toDouble() ?? 0.0;
     final double lng = fountain['xCoord']?.toDouble() ?? 0.0;
     final String name = fountain['name'] ?? 'Unknown';
     final String description = fountain['description'] ?? '';
-    final int filterLevel = fountain['filterLevel'] ?? 0;
-    final int rating = (fountain['rating'] as num?)?.toInt() ?? 0;
+    final String createdBy = fountain['createdBy'] ?? '';
+    final double filterLevel = fountain['filterLevel']?.toDouble() ?? 0.0;
+    final double rating = (fountain['rating'] as num?)?.toDouble() ?? 0.0;
+    
+
+    final userData = await ApiService.getUserData();
+    final currentUserId = userData['userId'];
 
     final marker = Marker(
-      width: 100,
-      height: 100,
+      key: ValueKey<String>(fountain['_id']),
+      width: 40,
+      height: 40,
       point: LatLng(lat, lng),
       child: GestureDetector(
         onTap: () {
@@ -59,10 +141,37 @@ class _MapPageState extends State<MapPage> {
               title: Text(name),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(description),
-                  Text('Filter Level: $filterLevel / 3'),
-                  Text('Rating: $rating / 5 💧'),
+                  Text('Filter Level: ${filterLevel.toStringAsFixed(2)} / 3'),
+                  Text('Rating: ${rating.toStringAsFixed(2)} / 5 💧'),
+                  const SizedBox(height: 10),
+                  if (currentUserId == createdBy)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.edit),
+                          label: const Text("Edit"),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _editFountain(fountain);
+                          },
+                        ),
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.delete),
+                          label: const Text("Delete"),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _deleteFountain(fountain['_id']);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                          ),
+                        ),
+                      ],
+                    ),
                 ],
               ),
             ),
@@ -128,6 +237,7 @@ class _MapPageState extends State<MapPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
+<<<<<<< HEAD
             const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -149,6 +259,9 @@ class _MapPageState extends State<MapPage> {
               width: 50,
               height: 50,
             ),
+=======
+            Image.asset('assets/logo.png', width: 50, height: 50),
+>>>>>>> 8e17f069d076a1a8d428a3bacccaee81b7431bd0
             Text(
               'Water Watch',
               style: GoogleFonts.poppins(
@@ -156,7 +269,6 @@ class _MapPageState extends State<MapPage> {
                 color: const Color(0xFF63ccca),
                 fontWeight: FontWeight.bold,
               ),
-              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
             Container(
@@ -175,8 +287,7 @@ class _MapPageState extends State<MapPage> {
                   ),
                   children: [
                     TileLayer(
-                      urlTemplate:
-                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                       userAgentPackageName: 'com.example.flutter_application_1',
                     ),
                     MarkerLayer(markers: _markers),
@@ -186,6 +297,7 @@ class _MapPageState extends State<MapPage> {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
+              onPressed: _handleAddFountain,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF4A6FA5),
                 foregroundColor: Colors.white,
@@ -193,15 +305,8 @@ class _MapPageState extends State<MapPage> {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                textStyle: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+                textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
-              onPressed: () {
-                _handleAddFountain();
-                print('Add fountain button pressed');
-              },
               child: const Text('Add Fountain at My Location'),
             ),
             const Spacer(flex: 3),
@@ -212,33 +317,25 @@ class _MapPageState extends State<MapPage> {
   }
 
   Future<void> _handleAddFountain() async {
+<<<<<<< HEAD
     print('✅ Start: Add fountain button pressed');
 
+=======
+>>>>>>> 8e17f069d076a1a8d428a3bacccaee81b7431bd0
     final hasPermission = await _handleLocationPermission();
-    print('🔍 Location permission granted: $hasPermission');
     if (!hasPermission) return;
 
     final position = await Geolocator.getCurrentPosition();
-    final lat = position.latitude;
-    final lng = position.longitude;
-    print('📍 Current location: ($lat, $lng)');
-
-    final location = LatLng(lat, lng);
+    final location = LatLng(position.latitude, position.longitude);
 
     final formData = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (_) => AddFountainDialog(location: location),
     );
 
-    print('📨 Form data submitted: $formData');
-
-    if (formData == null) {
-      print('🚫 Form dialog was cancelled or closed');
-      return;
-    }
+    if (formData == null) return;
 
     final token = await ApiService.getToken();
-    print('🔑 JWT Token: $token');
     if (token == null) {
       _showStatus('Please log in to add fountains', 'error');
       return;
@@ -254,34 +351,20 @@ class _MapPageState extends State<MapPage> {
       'jwtToken': token
     };
 
-    print('📦 Sending fountainData to API: $fountainData');
-
-    Map<String, dynamic> result = {};
-    try {
-      result = await ApiService.addWaterFountain(fountainData);
-      print('📥 API result: $result');
-    } catch (e) {
-      print('❌ Exception during API call: $e');
-      _showStatus('Something went wrong when adding the fountain.', 'error');
-      return;
-    }
-
-    print('📊 Result type: ${result.runtimeType}');
+    final result = await ApiService.addWaterFountain(fountainData);
 
     if (result['success'] == true) {
       _showStatus('Fountain added!', 'success');
-      final added = result['fountain'];
-      if (added is Map<String, dynamic>) {
-        print('🎯 Adding returned fountain marker');
-        addFountainMarker(added);
-      }
+      addFountainMarker(result['fountain']);
     } else {
       _showStatus('Error: ${result['error']}', 'error');
     }
-
-    print('✅ End: Add fountain logic');
   }
 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> 8e17f069d076a1a8d428a3bacccaee81b7431bd0
 
 class AddFountainDialog extends StatefulWidget {
   final LatLng location;
@@ -359,4 +442,74 @@ class _AddFountainDialogState extends State<AddFountainDialog> {
       ],
     );
   }
+<<<<<<< HEAD
 }
+=======
+}
+
+
+class EditFountainDialog extends StatefulWidget {
+  final Map<String, dynamic> initialData;
+  const EditFountainDialog({super.key, required this.initialData});
+
+  @override
+  _EditFountainDialogState createState() => _EditFountainDialogState();
+}
+
+class _EditFountainDialogState extends State<EditFountainDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late String name;
+  late String description;
+
+  @override
+  void initState() {
+    super.initState();
+    name = widget.initialData['name'] ?? '';
+    description = widget.initialData['description'] ?? '';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Edit Fountain'),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              initialValue: name,
+              decoration: const InputDecoration(labelText: 'Fountain Name'),
+              onChanged: (val) => name = val,
+              validator: (val) => val == null || val.isEmpty ? 'Required' : null,
+            ),
+            TextFormField(
+              initialValue: description,
+              decoration: const InputDecoration(labelText: 'Description'),
+              onChanged: (val) => description = val,
+              validator: (val) => val == null || val.isEmpty ? 'Required' : null,
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            if (_formKey.currentState?.validate() ?? false) {
+              Navigator.of(context).pop({
+                'name': name.trim(),
+                'description': description.trim(),
+              });
+            }
+          },
+          child: const Text('Save Changes'),
+        ),
+      ],
+    );
+  }
+}
+>>>>>>> 8e17f069d076a1a8d428a3bacccaee81b7431bd0

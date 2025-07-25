@@ -7,6 +7,7 @@ import 'leaflet/dist/leaflet.css';
 import SearchFountain from './SearchFountain';
 import ReactDOM from 'react-dom/client';
 import StarRating from './StarRating';
+import FountainMarker from '../assets/Icon.png'
 
 function doLogout(event: any): void {
   event.preventDefault();
@@ -112,7 +113,7 @@ const Map: React.FC = () => {
     rating: 5
   });
 
-  // Add this helper function to show status messages
+  // show status messages
   const showStatus = (message: string, type: 'success' | 'error') => {
     setStatus({ message, type });
     setTimeout(() => setStatus({ message: '', type: '' }), 5000);
@@ -157,13 +158,13 @@ const Map: React.FC = () => {
 
       const result: ApiResponse = response.data;
 
-      // 🔁 Refresh token if returned
+      // Refresh token if returned
       if (result.jwtToken) {
         setJwtToken(result.jwtToken);
         console.log('Token refreshed during delete');
       }
 
-      // ❌ Handle backend error
+      // Handle backend error
       if (result.error) {
         if (result.error.toLowerCase().includes('jwt') ||
           result.error.toLowerCase().includes('token') ||
@@ -174,7 +175,7 @@ const Map: React.FC = () => {
         throw new Error(result.error);
       }
 
-      // ✅ Handle success
+      // Handle success
       if (result.success) {
         showStatus(result.success, 'success');
       } else {
@@ -215,7 +216,7 @@ const Map: React.FC = () => {
     const userData = JSON.parse(localStorage.getItem("user_data") || "{}");
 
     const fountainIcon = (window.L as any).divIcon({
-      html: '💧',
+      html: `<img src="${FountainMarker}" alt="Water fountain" style="width: 100%; height: 100%;">`,
       iconSize: [25, 25],
       className: 'fountain-marker'
     });
@@ -237,7 +238,7 @@ const Map: React.FC = () => {
       `);
 
     marker.on('popupopen', () => {
-      // 🔄 Recenter map on popup
+      //Recenter map on popup
       map.setView(marker.getLatLng(), map.getZoom(), { animate: true });
 
       const token = retrieveToken();
@@ -789,6 +790,8 @@ const Map: React.FC = () => {
     <div className="map-page">
       {/* Header */}
       <div className="map-header">
+        <button type="button" id="logoutButton" className="buttons"
+          onClick={doLogout} style={{ position: 'absolute', top: '40px', right: '40px'}}> Log Out </button>
         <div className="button-container">
           <SearchFountain
             onResults={handleSearchResults}
@@ -983,15 +986,14 @@ const Map: React.FC = () => {
       <div className="map-container">
         <div ref={mapRef} style={{ height: '500px', width: '1000px' }} />
         <div className="map-instructions">
-          💧 Click anywhere on the map to add a water fountain
+          Click anywhere on the map to add a water fountain
           {isSearchActive && (
-            <div style={{ marginTop: '5px', fontSize: '14px', color: '#007bff' }}>
-              🔍 Showing {searchResults.length} search result(s)
+            <div style={{ marginTop: '5px', fontSize: '14px', color: '#63ccca' }}>
+               Showing {searchResults.length} search result(s)
             </div>
           )}
         </div>
-        <button type="button" id="logoutButton" className="buttons"
-          onClick={doLogout} style={{ float: 'right' }}> Log Out </button>
+        
       </div>
 
       {/* Status Messages */}

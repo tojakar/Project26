@@ -17,17 +17,30 @@ function Register() {
     navigate('/login');
   };
 
+  const passwordCheck = (password: string): boolean => {
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasNumber = /\d/.test(password);
+    return hasUpperCase && hasNumber;
+  }
+
   async function doRegister(event: any): Promise<void> {
     event.preventDefault();
 
     // Basic validation
     if (!firstName || !lastName || !email || !password) {
-      setMessage('Please fill in all fields');
+      setMessage('\nPlease fill in all fields');
+      return;
+    }
+
+
+    // add password complexity checks uppercase letter and number
+    if(!passwordCheck(password)) {
+      setMessage('\nPassword must contain at least one uppercase letter and one number')
       return;
     }
 
     if (password !== confirmPassword) {
-      setMessage('Passwords do not match');
+      setMessage('\nPasswords do not match');
       return;
     }
 
@@ -51,7 +64,7 @@ function Register() {
 
       // Registration successful - your API returns { message: 'User created successfully', user: newUser }
       if (response.data.message) {
-        setMessage('Registration successful! Redirecting to login...');
+        setMessage('Please verify your email');
         setTimeout(() => {
           navigate('/login');
         }, 2000);
@@ -92,7 +105,7 @@ function Register() {
       <span id="inner-title">Register</span><br />
       First Name: <input type="text" id="firstName" placeholder="First Name" onChange={handleSetFirstName} /><br />
       Last Name: <input type="text" id="lastName" placeholder="Last Name" onChange={handleSetLastName} /><br />
-      Email: <input type="text" id="registerEmail" placeholder="Email" onChange={handleSetEmail} /><br />
+      Email: <input type="text" id="registerEmail" placeholder="Example@gmail.com" onChange={handleSetEmail} /><br />
       Password: <input type="password" id="registerPassword" placeholder="Password" onChange={handleSetPassword} /><br />
       Confirm Password: <input type="password" id="confirmPassword" placeholder="Confirm Password" onChange={handleSetConfirmPassword} />
       

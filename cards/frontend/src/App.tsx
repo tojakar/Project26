@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage';
 import CardPage from './pages/CardPage';
 import RegisterPage from './pages/RegisterPage.tsx'; 
 import MapPage from './pages/MapPage.tsx'; 
+import EmailVerificationPage from './pages/EmailVerificationPage.tsx';
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/map" element={<MapPage />} />
         <Route path="/cards" element={<CardPage />} />
+        <Route path="/verify-email" element={<EmailVerificationPage />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>

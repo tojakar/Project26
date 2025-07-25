@@ -1,6 +1,7 @@
 require('express');
 const sgMail = require("@sendgrid/mail");
 sgMail.setApiKey(process.env.SENDGRID_API);
+const sender = process.env.EMAIL_SENDER;
 require('mongodb');
 const jwt = require("jsonwebtoken");
 //load user model
@@ -13,6 +14,7 @@ const Rating = require("./models/rating.js");
 
 //hashing stuff
 const bcrypt = require('bcrypt');
+const { act } = require('react');
 const saltRounds = 10;
 
 
@@ -116,6 +118,10 @@ exports.setApp = function (app, client) {
             res.status(400).json({ error: "Email/Password incorrect" });
             return;
         }
+        if (!results[0].verified){
+            res.status(400).json({ error: "Please verify your email first." });
+            return;
+        }
 
         var id = -1;
         var fn = '';
@@ -139,32 +145,50 @@ exports.setApp = function (app, client) {
     // incoming: firstName, lastName, email, password
     // outgoing: message, user, error
     app.post('/api/register', async (req, res) => {
-
         const { firstName, lastName, email, password } = req.body;
 
         try {
             if (!email || !password || !firstName || !lastName) {
                 return res.status(400).json({ error: 'All fields are required' });
             }
-            // Check if email already exists
-            const existing = await User.findOne({ email: email });
+
+            const existing = await User.findOne({ email });
             if (existing) {
                 return res.status(400).json({ error: 'Email already exists' });
             }
-            const hashedPassword = await bcrypt.hash(password, saltRounds);
 
+            const hashedPassword = await bcrypt.hash(password, saltRounds);
             const newUser = new User({
-                firstName: firstName,
-                lastName: lastName,
-                email: email,
-                password: hashedPassword  //hashed password
+                firstName,
+                lastName,
+                email,
+                password: hashedPassword,
+                verified: false
             });
 
             await newUser.save();
-            res.status(200).json({ message: 'User created successfully', user: newUser });
+
+            const tokenModule = require("./createJWT.js");
+            const { accessToken } = tokenModule.createToken(firstName, lastName, newUser._id);
+
+            const verifyURL = `http://group26.xyz/api/verify-email?token=${accessToken}`;
+            const msg = {
+                to: email,
+                from: sender,
+                subject: 'Please verify your email for Water Watch',
+                html: `<p>Hello ${firstName},</p><p>Please <a href="${verifyURL}">click here</a> to verify your account.</p>`
+            };
+
+            await sgMail.send(msg);
+
+            return res.status(200).json({
+                message: 'Registration successful. Check your email to verify your account.',
+                user: newUser
+            });
 
         } catch (err) {
-            res.status(500).json({ error: err.message });
+            console.error(err);
+            return res.status(500).json({ error: err.message });
         }
     });
 
@@ -464,6 +488,43 @@ exports.setApp = function (app, client) {
         }
 
         res.status(200).json({ rating: userRating?.rating || null, error, jwtToken: refreshedToken });
+    });
+    app.get('/api/verify-email', async(req, res) =>{
+        const verify_token = req.query.token;
+        if (!verify_token) {
+            return res.status(400).send("Missing token.");
+        }
+        if (token.isExpired(verify_token))
+        {
+            return res.status(400).send("Token expired");
+        }
+
+        const jwt = require("jsonwebtoken");
+        let decoded;
+        try {
+            decoded = jwt.verify(verify_token, process.env.ACCESS_TOKEN_SECRET);
+        } catch (err){
+            return res.status(400).send("Invalid token.");
+        }
+        try {
+            const user = await User.findById(decoded.userId);
+            if (!user)
+            {
+                return res.status(404).send("User not found.");
+            }
+            if (user.verified)
+            {
+                return res.status(200).send("Email already verified.");
+            }
+            user.verified = true;
+            await user.save();
+            return res.status(200).send("Email verified successfully.");
+
+        } catch (err)
+        {
+            return res.status(500).send("Server error.");
+        }
+
     });
 }
 
