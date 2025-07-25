@@ -171,7 +171,7 @@ exports.setApp = function (app, client) {
             const tokenModule = require("./createJWT.js");
             const { accessToken } = tokenModule.createToken(firstName, lastName, newUser._id);
 
-            const verifyURL = `https://group26.xyz/api/verify-email?token=${accessToken}`;
+            const verifyURL = `http://group26.xyz/api/verify-email?token=${accessToken}`;
             const msg = {
                 to: email,
                 from: sender,
