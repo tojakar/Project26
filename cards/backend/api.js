@@ -14,6 +14,7 @@ const Rating = require("./models/rating.js");
 
 //hashing stuff
 const bcrypt = require('bcrypt');
+const { act } = require('react');
 const saltRounds = 10;
 
 
@@ -144,54 +145,51 @@ exports.setApp = function (app, client) {
     // incoming: firstName, lastName, email, password
     // outgoing: message, user, error
     app.post('/api/register', async (req, res) => {
-
         const { firstName, lastName, email, password } = req.body;
 
         try {
             if (!email || !password || !firstName || !lastName) {
                 return res.status(400).json({ error: 'All fields are required' });
             }
-            // Check if email already exists
             const existing = await User.findOne({ email: email });
+
+            const existing = await User.findOne({ email });
             if (existing) {
                 return res.status(400).json({ error: 'Email already exists' });
             }
-            const hashedPassword = await bcrypt.hash(password, saltRounds);
 
+            const hashedPassword = await bcrypt.hash(password, saltRounds);
             const newUser = new User({
-                firstName: firstName,
-                lastName: lastName,
-                email: email,
-                password: hashedPassword,  //hashed password
+                firstName,
+                lastName,
+                email,
+                password: hashedPassword,
                 verified: false
             });
 
             await newUser.save();
-            res.status(200).json({ message: 'User created successfully', user: newUser });
-            
-            var ret;
 
-            try {
-                const token = require("./createJWT.js");
-                ret = token.createToken(firstName, lastName, newUser._id);
-                const verifyURL = `https://group26.xyz/verify-email?token=${ret}`;
-                const msg = {
-                    to: email,
-                    from: sender,
-                    subject: 'Please verify your email for Water Watch',
-                    html: `<p> Hello new user, </p> <br> <p> Please <a href = "${verifyURL}">click this</a> to verify your account.</p>`
-                };
-                await sgMail.send(msg);
-                res.status(200).json({ message: 'Registration successful. Check your email to verify your account.' });
-            }
-            catch (e)
-            {
-                ret = {error:e.message};
-            }
-            res.status(200).json(ret);
+            const tokenModule = require("./createJWT.js");
+            const { accessToken } = tokenModule.createToken(firstName, lastName, newUser._id);
+
+            const verifyURL = `https://group26.xyz/api/verify-email?token=${accessToken}`;
+            const msg = {
+                to: email,
+                from: sender,
+                subject: 'Please verify your email for Water Watch',
+                html: `<p>Hello ${firstName},</p><p>Please <a href="${verifyURL}">click here</a> to verify your account.</p>`
+            };
+
+            await sgMail.send(msg);
+
+            return res.status(200).json({
+                message: 'Registration successful. Check your email to verify your account.',
+                user: newUser
+            });
 
         } catch (err) {
-            res.status(500).json({ error: err.message });
+            console.error(err);
+            return res.status(500).json({ error: err.message });
         }
     });
 
@@ -505,12 +503,12 @@ exports.setApp = function (app, client) {
         const jwt = require("jsonwebtoken");
         let decoded;
         try {
-            decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+            decoded = jwt.verify(verify_token, process.env.ACCESS_TOKEN_SECRET);
         } catch (err){
             return res.status(400).send("Invalid token.");
         }
         try {
-            const user = await User.findById(decoded._id);
+            const user = await User.findById(decoded.userId);
             if (!user)
             {
                 return res.status(404).send("User not found.");

@@ -14,8 +14,8 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/map" element={<MapPage />} />
         <Route path="/cards" element={<CardPage />} />
-        <Route path="*" element={<Navigate to="/" />} />
         <Route path="/verify-email" element={<EmailVerificationPage />} />
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
   );

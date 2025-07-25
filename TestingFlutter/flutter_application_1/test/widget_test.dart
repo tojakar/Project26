@@ -1,19 +1,36 @@
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:flutter_application_1/main.dart';
+import 'package:flutter_application_1/main.dart'; // Update if your main.dart path is different
+import 'package:flutter/material.dart';
 
 void main() {
-  testWidgets('Landing screen shows app title and buttons', (WidgetTester tester) async {
-    await tester.pumpWidget(const MyApp());
+  group('Water Watch App Tests', () {
+    
+    testWidgets('1️⃣ Landing screen shows app title and buttons', (WidgetTester tester) async {
+      await tester.pumpWidget(const MyApp());
 
-    // Check that the app title appears
-    expect(find.text('Water Watch'), findsOneWidget);
+      expect(find.text('Water Watch'), findsOneWidget);
+      expect(find.text('Find your favorite fountain'), findsOneWidget);
+      expect(find.text('Register'), findsOneWidget);
+      expect(find.text('Login'), findsOneWidget);
+    });
 
-    // Check for the subtitle
-    expect(find.text('Find your favorite fountain'), findsOneWidget);
+    testWidgets('2️⃣ Tapping Login navigates to Login screen', (WidgetTester tester) async {
+      await tester.pumpWidget(const MyApp());
 
-    // Check for Register and Login buttons
-    expect(find.text('Register'), findsOneWidget);
-    expect(find.text('Login'), findsOneWidget);
+      await tester.tap(find.text('Login'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Email'), findsOneWidget); // Replace with actual Login page content
+    });
+
+    testWidgets('3️⃣ Tapping Register navigates to Register screen', (WidgetTester tester) async {
+      await tester.pumpWidget(const MyApp());
+
+      await tester.tap(find.text('Register'));
+      await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(ElevatedButton, 'Sign Up'), findsOneWidget);
+    });
+
   });
 }
