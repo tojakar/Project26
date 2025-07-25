@@ -19,6 +19,20 @@ class ApiService {
     }
   }
 
+static Future<Map<String, dynamic>> postJson(String url, Map<String, dynamic> body) async {
+  try {
+    final response = await http.post(
+      Uri.parse(url),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(body),
+    );
+    return jsonDecode(response.body);
+  } catch (e) {
+    print('POST error: $e');
+    return {'error': 'Request failed'};
+  }
+}
+
   // Decode JWT token to extract user data
   static Map<String, dynamic>? decodeJWT(String token) {
     try {

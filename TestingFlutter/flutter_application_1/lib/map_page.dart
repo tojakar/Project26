@@ -4,6 +4,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'services/api_service.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:flutter_application_1/search_bar.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -20,13 +21,17 @@ class _MapPageState extends State<MapPage> {
   @override
   void initState() {
     super.initState();
-    // Fetch water fountains when the page is initialized
-    _fetchWaterFountains().then((waterFountains) {
-      for (int i = 0; i < waterFountains.length; i++) {
-        addFountainMarker(waterFountains[i]);
+    _loadAllFountains();
+  }
+
+  Future<void> _loadAllFountains() async {
+    final all = await _fetchWaterFountains();
+    setState(() {
+      _markers.clear();
+      for (final f in all) {
+        addFountainMarker(f);
       }
     });
-    
   }
 
   Future<List<dynamic>> _fetchWaterFountains() async {
@@ -63,14 +68,10 @@ class _MapPageState extends State<MapPage> {
             ),
           );
         },
-        child: const Text(
-          '💧',
-          style: TextStyle(fontSize: 24),
-        ),
+        child: const Text('💧', style: TextStyle(fontSize: 24)),
       ),
     );
 
-    // ✅ Add the new marker and trigger UI update
     setState(() {
       _markers.add(marker);
     });
@@ -127,6 +128,22 @@ class _MapPageState extends State<MapPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: WaterFountainSearchBar(
+                onResults: (results) {
+                  setState(() {
+                    _markers.clear();
+                    for (final fountain in results) {
+                      addFountainMarker(fountain);
+                    }
+                  });
+                },
+                onClear: () => _loadAllFountains(),
+              ),
+            ),
+            const SizedBox(height: 16),
             Image.asset(
               'assets/logo.png',
               width: 50,
@@ -162,9 +179,7 @@ class _MapPageState extends State<MapPage> {
                           'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                       userAgentPackageName: 'com.example.flutter_application_1',
                     ),
-                    MarkerLayer(
-                      markers: _markers,
-                    ),
+                    MarkerLayer(markers: _markers),
                   ],
                 ),
               ),
@@ -196,7 +211,7 @@ class _MapPageState extends State<MapPage> {
     );
   }
 
-    Future<void> _handleAddFountain() async {
+  Future<void> _handleAddFountain() async {
     print('✅ Start: Add fountain button pressed');
 
     final hasPermission = await _handleLocationPermission();
@@ -267,7 +282,6 @@ class _MapPageState extends State<MapPage> {
     print('✅ End: Add fountain logic');
   }
 }
- 
 
 class AddFountainDialog extends StatefulWidget {
   final LatLng location;
@@ -346,4 +360,3 @@ class _AddFountainDialogState extends State<AddFountainDialog> {
     );
   }
 }
-
