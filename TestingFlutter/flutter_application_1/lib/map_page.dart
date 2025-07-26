@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'services/api_service.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_application_1/search_bar.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -107,62 +108,142 @@ class _MapPageState extends State<MapPage> {
   }
 
   void addFountainMarker(Map<String, dynamic> fountain) async {
-    final double lat = fountain['yCoord']?.toDouble() ?? 0.0;
-    final double lng = fountain['xCoord']?.toDouble() ?? 0.0;
-    final String name = fountain['name'] ?? 'Unknown';
-    final String description = fountain['description'] ?? '';
-    final String createdBy = fountain['createdBy'] ?? '';
-    final double filterLevel = fountain['filterLevel']?.toDouble() ?? 0.0;
-    final double rating = (fountain['rating'] as num?)?.toDouble() ?? 0.0;
+    final String fountainId = fountain['_id'] as String;
+    final double lat = (fountain['yCoord'] as num?)?.toDouble() ?? 0.0;
+    final double lng = (fountain['xCoord'] as num?)?.toDouble() ?? 0.0;
+    final String name = fountain['name'] as String? ?? 'Unknown';
+    final String description = fountain['description'] as String? ?? '';
+    final String createdBy = fountain['createdBy'] as String? ?? '';
+    final double filterLevel = (fountain['filterLevel'] as num?)?.toDouble() ?? 0.0;
+    final double rating     = (fountain['rating']      as num?)?.toDouble() ?? 0.0;
 
     final userData = await ApiService.getUserData();
-    final currentUserId = userData['userId'];
+    final String? currentUserId = userData['userId'];
 
     final marker = Marker(
-      key: ValueKey<String>(fountain['_id']),
+      key: ValueKey<String>(fountainId),
       width: 40,
       height: 40,
       point: LatLng(lat, lng),
       child: GestureDetector(
         onTap: () {
+          double currentRating    = rating;
+          double currentFilterLvl = filterLevel;
+
           showDialog(
             context: navigatorKey.currentContext!,
-            builder: (context) => AlertDialog(
-              title: Text(name),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(description),
-                  Text('Filter Level: ${filterLevel.toStringAsFixed(2)} / 3'),
-                  Text('Rating: ${rating.toStringAsFixed(2)} / 5 💧'),
-                  const SizedBox(height: 10),
-                  if (currentUserId == createdBy)
+            builder: (_) => StatefulBuilder(
+              builder: (context, setState) => AlertDialog(
+                title: Text(name),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(description),
+                    const SizedBox(height: 12),
+
+                    // 🔹 Filter Level row
+                    Text('Filter Level: ${currentFilterLvl.toStringAsFixed(2)} / 3'),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        ElevatedButton.icon(
-                          icon: const Icon(Icons.edit),
-                          label: const Text("Edit"),
-                          onPressed: () {
-                            Navigator.pop(context);
-                            _editFountain(fountain);
+                      children: List.generate(3, (i) {
+                        final lvl = i + 1;
+                        return GestureDetector(
+                          onTap: () async {
+                            // cast int → double here
+                            setState(() => currentFilterLvl = lvl.toDouble());
+
+                            final token = await ApiService.getToken();
+                            if (token == null) {
+                              _showStatus('Please log in to rate fountains', 'error');
+                              return;
+                            }
+                            final resp = await ApiService.rateFilterLevel(
+                              fountainId, lvl, token
+                            );
+                            setState(() {
+                              // resp['averageFilterLevel'] is a num, cast to double
+                              currentFilterLvl = (resp['averageFilterLevel'] as num?)?.toDouble() 
+                                                  ?? lvl.toDouble();
+                            });
                           },
-                        ),
-                        ElevatedButton.icon(
-                          icon: const Icon(Icons.delete),
-                          label: const Text("Delete"),
-                          onPressed: () {
-                            Navigator.pop(context);
-                            _deleteFountain(fountain['_id']);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red,
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey),
+                              color: lvl <= currentFilterLvl
+                                  ? Colors.blue.shade100
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text('$lvl'),
                           ),
-                        ),
-                      ],
+                        );
+                      }),
                     ),
-                ],
+
+                    const SizedBox(height: 16),
+
+                    // 🔹 Star Rating bar
+                    Text('Rating: ${currentRating.toStringAsFixed(2)} / 5'),
+                    RatingBar.builder(
+                      initialRating: currentRating,
+                      minRating: 1,
+                      itemCount: 5,
+                      itemSize: 28,
+                      itemBuilder: (_, __) => const Icon(
+                        Icons.star,
+                        color: Colors.amber,
+                      ),
+                      updateOnDrag: true,
+                      onRatingUpdate: (newRating) async {
+                        setState(() => currentRating = newRating);
+
+                        final token = await ApiService.getToken();
+                        if (token == null) {
+                          _showStatus('Please log in to rate fountains', 'error');
+                          return;
+                        }
+                        final resp = await ApiService.rateWaterFountain(
+                          fountainId, newRating, token
+                        );
+                        setState(() {
+                          currentRating = (resp['averageRating'] as num?)?.toDouble() 
+                                          ?? newRating;
+                        });
+                      },
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // 🔹 Edit / Delete buttons (only for owner)
+                    if (currentUserId == createdBy)
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.edit),
+                            label: const Text("Edit"),
+                            onPressed: () {
+                              Navigator.pop(context);
+                              _editFountain(fountain);
+                            },
+                          ),
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.delete),
+                            label: const Text("Delete"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                            ),
+                            onPressed: () {
+                              Navigator.pop(context);
+                              _deleteFountain(fountainId);
+                            },
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
               ),
             ),
           );

@@ -339,4 +339,39 @@ static Future<Map<String, dynamic>> postJson(String url, Map<String, dynamic> bo
       return {'success': false, 'error': 'An error occurred while editing the fountain.'};
     }
   }
+   /// Rate filter level, returns { 'averageFilterLevel': double, … }
+  static Future<Map<String, dynamic>> rateFilterLevel(
+    String fountainId,
+    int level,
+    String jwtToken,
+  ) async {
+    final resp = await http.post(
+      Uri.parse(buildPath('api/rateFilterLevel')),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'fountainId': fountainId,
+        'filterLevel': level,
+        'jwtToken': jwtToken,
+      }),
+    );
+    return jsonDecode(resp.body) as Map<String, dynamic>;
+  }
+
+  /// Rate water fountain, returns { 'averageRating': double, … }
+  static Future<Map<String, dynamic>> rateWaterFountain(
+    String fountainId,
+    double rating,
+    String jwtToken,
+  ) async {
+    final resp = await http.post(
+      Uri.parse(buildPath('api/rateWaterFountain')),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'fountainId': fountainId,
+        'rating': rating,
+        'jwtToken': jwtToken,
+      }),
+    );
+    return jsonDecode(resp.body) as Map<String, dynamic>;
+  }
 }
