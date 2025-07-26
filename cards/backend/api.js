@@ -267,7 +267,7 @@ exports.setApp = function (app, client) {
         } catch (e) {
             console.log('token.refresh error:', e.message);
         }
-
+        savedWaterFountain = await WaterFountain.findById(savedWaterFountain._id);
         // 5️⃣ Return the newly created fountain
         res.status(200).json({
             success: success,
