@@ -8,6 +8,7 @@ import SearchFountain from './SearchFountain';
 import ReactDOM from 'react-dom/client';
 import StarRating from './StarRating';
 import FountainMarker from '../assets/Icon.png'
+import FilterLevelRating from './FilterLevelRating'; // Adjust path as needed
 
 function doLogout(event: any): void {
   event.preventDefault();
@@ -232,18 +233,34 @@ const Map: React.FC = () => {
           <p style="margin: 2px 0;">${fountain.description}</p>
           <p style="margin: 2px 0;">Filter Level: ${fountain.filterLevel}/3</p>
           <p style="margin: 2px 0;">Rating: ${fountain.rating}/5 💧</p>
+          <div id="filter-rating-${fountain._id}" style="margin-top: 6px;"></div>
           <div id="rating-${fountain._id}" style="margin-top: 6px;"></div>
           <div id="button-container-${fountain._id}" style="display: flex; justify-content: center; gap: 8px; margin-top: 8px;"></div>
         </div>
       `);
+
+      
 
     marker.on('popupopen', () => {
       //Recenter map on popup
       map.setView(marker.getLatLng(), map.getZoom(), { animate: true });
 
       const token = retrieveToken();
+      const filterRatingContainer = document.getElementById(`filter-rating-${fountain._id}`);
       const ratingContainer = document.getElementById(`rating-${fountain._id}`);
       const buttonContainer = document.getElementById(`button-container-${fountain._id}`);
+
+      // 🧪 Filter Level Rating
+      if (filterRatingContainer && userData?.userId && token) {
+        const root = ReactDOM.createRoot(filterRatingContainer);
+        root.render(
+          <FilterLevelRating
+            userId={userData.userId}
+            fountainId={fountain._id}
+            jwtToken={token}
+          />
+        );
+      }
 
       // ⭐ React Star Rating
       if (ratingContainer && userData?.userId && token) {
@@ -256,6 +273,9 @@ const Map: React.FC = () => {
           />
         );
       }
+    
+
+      
 
       // ✏️ 🗑️ Buttons
       if (
@@ -263,28 +283,45 @@ const Map: React.FC = () => {
         userData?.userId &&
         fountain.createdBy === userData.userId
       ) {
-        buttonContainer.innerHTML = `
-          <button id="edit-${fountain._id}" style="
-            background: #4a6fa5;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-            min-width: 70px;
-          ">✏️ Edit</button>
-          <button id="delete-${fountain._id}" style="
-            background: #c0392b;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-            min-width: 70px;
-          ">🗑️ Delete</button>
-        `;
+      buttonContainer.innerHTML = `
+        <button id="edit-${fountain._id}" style="
+          background: #4a6fa5;
+          color: white;
+          border: none;
+          padding: 2px 8px;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 12px;
+          min-width: 80px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 4px;
+          line-height: 1;
+        " title="Edit">
+          ✏️ <span>Edit</span>
+        </button>
+
+        <button id="delete-${fountain._id}" style="
+          background: #c0392b;
+          color: white;
+          border: none;
+          padding: 2px 8px;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 12px;
+          min-width: 80px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 4px;
+          line-height: 1;
+        " title="Delete">
+          🗑️ <span>Delete</span>
+        </button>
+      `;
 
         document.getElementById(`edit-${fountain._id}`)?.addEventListener('click', () => {
           openEditModal(fountain);
@@ -313,14 +350,12 @@ const Map: React.FC = () => {
     setShowEditModal(true);
   };
 
-  const updateWaterFountain = async (e: React.MouseEvent<HTMLButtonElement>): Promise<void> => {
+   const updateWaterFountain = async (e: React.MouseEvent<HTMLButtonElement>): Promise<void> => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      if (!editingFountain) {
-        throw new Error('');
-      }
+      if (!editingFountain) throw new Error('No fountain selected');
 
       const token = getJwtToken();
       if (!token) {
@@ -332,34 +367,27 @@ const Map: React.FC = () => {
         id: editingFountain._id,
         editedFields: {
           name: editFormData.name.trim(),
-          description: editFormData.description.trim(),
-          filterLevel: Number(editFormData.filterLevel),
-          rating: Number(editFormData.rating)
+          description: editFormData.description.trim()
         },
         jwtToken: token
       };
 
-      const response = await axios.post(buildPath('api/editWaterFountain'), updateData, {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 10000
-      });
+      const response = await axios.post<ApiResponse>(
+        buildPath('api/editWaterFountain'),
+        updateData,
+        { headers: { 'Content-Type': 'application/json' }, timeout: 10000 }
+      );
 
       const result = response.data;
+      if (result.jwtToken) setJwtToken(result.jwtToken as string);
 
-      if (result.jwtToken) {
-        setJwtToken(result.jwtToken);
-      }
-
-      if (result.error) {
-        throw new Error(result.error);
-      }
+      if (result.error) throw new Error(result.error);
 
       showStatus('Fountain updated successfully!', 'success');
       setShowEditModal(false);
       setEditingFountain(null);
-
-      window.location.reload(); 
-
+      // optionally refresh markers/data here instead of full reload
+      window.location.reload();
     } catch (error) {
       console.error(error);
       showStatus('Error updating fountain: ' + (error as Error).message, 'error');
@@ -905,7 +933,8 @@ const Map: React.FC = () => {
         </div>
       )}
 
-      {/* Edit Modal */}
+   
+     {/* Edit Modal */}
       {showEditModal && editingFountain && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -917,7 +946,9 @@ const Map: React.FC = () => {
                   type="text"
                   name="name"
                   value={editFormData.name}
-                  onChange={(e) => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={e =>
+                    setEditFormData(prev => ({ ...prev, name: e.target.value }))
+                  }
                   required
                   className="form-input"
                   placeholder="Enter fountain name"
@@ -929,31 +960,12 @@ const Map: React.FC = () => {
                 <textarea
                   name="description"
                   value={editFormData.description}
-                  onChange={(e) => setEditFormData(prev => ({ ...prev, description: e.target.value }))}
+                  onChange={e =>
+                    setEditFormData(prev => ({ ...prev, description: e.target.value }))
+                  }
                   className="form-textarea"
                   placeholder="Describe the fountain..."
                   rows={3}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Filter Level (1-3)</label>
-                <input
-                  type="number"
-                  name="filterLevel"
-                  value={editFormData.filterLevel}
-                  onChange={(e) => setEditFormData(prev => ({ ...prev, filterLevel: parseInt(e.target.value) }))}
-                  min={1}
-                  max={3}
-                  className="form-input"
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Rating ({editFormData.rating}/5)</label>
-                <StarSelector
-                  rating={editFormData.rating}
-                  onRatingChange={(newRating) => setEditFormData(prev => ({ ...prev, rating: newRating }))}
                 />
               </div>
 
@@ -963,7 +975,12 @@ const Map: React.FC = () => {
                   onClick={() => {
                     setShowEditModal(false);
                     setEditingFountain(null);
-                    setEditFormData({ name: '', description: '', filterLevel: 1, rating: 5 });
+                    setEditFormData({
+                      name: '',
+                      description: '',
+                      filterLevel: 1,  // kept for reset consistency
+                      rating: 5
+                    });
                   }}
                   className="button-secondary"
                 >

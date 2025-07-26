@@ -11,6 +11,7 @@ const Card = require("./models/card.js");
 //load WaterFountain model
 const WaterFountain = require("./models/WaterFountain.js");
 const Rating = require("./models/rating.js");
+const FilterLevel = require("./models/filterLevel.js");
 
 //hashing stuff
 const bcrypt = require('bcrypt');
@@ -526,6 +527,90 @@ exports.setApp = function (app, client) {
         }
 
     });
+
+    async function rateFilterLevel({ userId, fountainId, filterLevel }) {
+        let success = '';
+        let error = '';
+
+        try {
+            const existing = await FilterLevel.findOne({ userId, fountainId });
+            const fountain = await WaterFountain.findById(fountainId);
+            if (!fountain) throw new Error('Fountain not found');
+
+            if (existing) {
+                // Update existing
+                fountain.totalFilterLevel = fountain.totalFilterLevel - existing.filterLevel + filterLevel;
+                await FilterLevel.updateOne({ userId, fountainId }, { filterLevel });
+            } else {
+                // New rating
+                fountain.totalFilterLevel += filterLevel;
+                fountain.numFilterRatings += 1;
+                await FilterLevel.create({ userId, fountainId, filterLevel });
+            }
+
+            fountain.filterLevel = fountain.totalFilterLevel / fountain.numFilterRatings;
+            await fountain.save();
+            success = 'Filter level rating saved';
+        } catch (e) {
+            console.error(e);
+            error = e.toString();
+        }
+
+        return { success, error };
+    }
+
+    app.post('/api/rateFilterLevel', async (req, res) => {
+        const { userId, fountainId, filterLevel, jwtToken } = req.body;
+
+        try {
+            if (token.isExpired(jwtToken)) {
+            return res.status(401).json({ error: 'JWT expired', jwtToken: '' });
+            }
+        } catch (e) {
+            return res.status(500).json({ error: 'Invalid token' });
+        }
+
+        const { success, error } = await rateFilterLevel({ userId, fountainId, filterLevel });
+
+        let refreshedToken = '';
+        try {
+            refreshedToken = token.refresh(jwtToken);
+        } catch (e) {
+            console.log(e.message);
+        }
+
+        res.status(200).json({ success, error, jwtToken: refreshedToken });
+        });
+
+        app.post('/api/getUserFilterLevel', async (req, res) => {
+            const { userId, fountainId, jwtToken } = req.body;
+
+            try {
+                if (token.isExpired(jwtToken)) {
+                return res.status(401).json({ error: 'JWT expired', jwtToken: '' });
+                }
+            } catch (e) {
+                return res.status(500).json({ error: 'Invalid token' });
+            }
+
+            let error = '';
+            let filterLevel = null;
+            try {
+                const rating = await FilterLevel.findOne({ userId, fountainId });
+                filterLevel = rating?.filterLevel || null;
+            } catch (e) {
+                error = e.toString();
+            }
+
+            let refreshedToken = '';
+            try {
+                refreshedToken = token.refresh(jwtToken);
+            } catch (e) {
+                console.log(e.message);
+            }
+
+            res.status(200).json({ filterLevel, error, jwtToken: refreshedToken });
+            });
 }
 
 

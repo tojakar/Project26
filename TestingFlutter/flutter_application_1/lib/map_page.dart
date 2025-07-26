@@ -21,7 +21,6 @@ class _MapPageState extends State<MapPage> {
   @override
   void initState() {
     super.initState();
-<<<<<<< HEAD
     _loadAllFountains();
   }
 
@@ -31,11 +30,6 @@ class _MapPageState extends State<MapPage> {
       _markers.clear();
       for (final f in all) {
         addFountainMarker(f);
-=======
-    _fetchWaterFountains().then((waterFountains) {
-      for (int i = 0; i < waterFountains.length; i++) {
-        addFountainMarker(waterFountains[i]);
->>>>>>> 8e17f069d076a1a8d428a3bacccaee81b7431bd0
       }
     });
   }
@@ -75,7 +69,6 @@ class _MapPageState extends State<MapPage> {
     } else {
       _showStatus("Failed to delete fountain", "error");
     }
-
   }
 
   void _editFountain(Map<String, dynamic> fountain) async {
@@ -93,14 +86,13 @@ class _MapPageState extends State<MapPage> {
       'jwtToken': token,
     });
 
-   if (result['success'] == true) {
+    if (result['success'] == true) {
       _showStatus("Fountain updated!", "success");
 
       setState(() {
         _markers.removeWhere((m) => (m.key as ValueKey).value == fountain['_id']);
       });
 
-      // Schedule adding the marker in the next frame to avoid duplicate key during build
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final updatedFountain = {
           ...fountain,
@@ -109,8 +101,7 @@ class _MapPageState extends State<MapPage> {
         };
         addFountainMarker(updatedFountain);
       });
-    }
-    else {
+    } else {
       _showStatus("Failed to update fountain", "error");
     }
   }
@@ -123,7 +114,6 @@ class _MapPageState extends State<MapPage> {
     final String createdBy = fountain['createdBy'] ?? '';
     final double filterLevel = fountain['filterLevel']?.toDouble() ?? 0.0;
     final double rating = (fountain['rating'] as num?)?.toDouble() ?? 0.0;
-    
 
     final userData = await ApiService.getUserData();
     final currentUserId = userData['userId'];
@@ -217,6 +207,46 @@ class _MapPageState extends State<MapPage> {
     );
   }
 
+  Future<void> _handleAddFountain() async {
+    final hasPermission = await _handleLocationPermission();
+    if (!hasPermission) return;
+
+    final position = await Geolocator.getCurrentPosition();
+    final location = LatLng(position.latitude, position.longitude);
+
+    final formData = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (_) => AddFountainDialog(location: location),
+    );
+
+    if (formData == null) return;
+
+    final token = await ApiService.getToken();
+    if (token == null) {
+      _showStatus('Please log in to add fountains', 'error');
+      return;
+    }
+
+    final fountainData = {
+      'name': formData['name'],
+      'description': formData['description'],
+      'filterLevel': formData['filterLevel'],
+      'rating': formData['rating'],
+      'xCoord': location.longitude,
+      'yCoord': location.latitude,
+      'jwtToken': token,
+    };
+
+    final result = await ApiService.addWaterFountain(fountainData);
+
+    if (result['success'] == true) {
+      _showStatus('Fountain added!', 'success');
+      addFountainMarker(result['fountain']);
+    } else {
+      _showStatus('Error: ${result['error']}', 'error');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -235,9 +265,7 @@ class _MapPageState extends State<MapPage> {
       ),
       body: Center(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
           children: [
-<<<<<<< HEAD
             const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -250,18 +278,11 @@ class _MapPageState extends State<MapPage> {
                     }
                   });
                 },
-                onClear: () => _loadAllFountains(),
+                onClear: _loadAllFountains,
               ),
             ),
             const SizedBox(height: 16),
-            Image.asset(
-              'assets/logo.png',
-              width: 50,
-              height: 50,
-            ),
-=======
             Image.asset('assets/logo.png', width: 50, height: 50),
->>>>>>> 8e17f069d076a1a8d428a3bacccaee81b7431bd0
             Text(
               'Water Watch',
               style: GoogleFonts.poppins(
@@ -301,11 +322,7 @@ class _MapPageState extends State<MapPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF4A6FA5),
                 foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               child: const Text('Add Fountain at My Location'),
             ),
@@ -315,56 +332,7 @@ class _MapPageState extends State<MapPage> {
       ),
     );
   }
-
-  Future<void> _handleAddFountain() async {
-<<<<<<< HEAD
-    print('✅ Start: Add fountain button pressed');
-
-=======
->>>>>>> 8e17f069d076a1a8d428a3bacccaee81b7431bd0
-    final hasPermission = await _handleLocationPermission();
-    if (!hasPermission) return;
-
-    final position = await Geolocator.getCurrentPosition();
-    final location = LatLng(position.latitude, position.longitude);
-
-    final formData = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (_) => AddFountainDialog(location: location),
-    );
-
-    if (formData == null) return;
-
-    final token = await ApiService.getToken();
-    if (token == null) {
-      _showStatus('Please log in to add fountains', 'error');
-      return;
-    }
-
-    final fountainData = {
-      'name': formData['name'],
-      'description': formData['description'],
-      'filterLevel': formData['filterLevel'],
-      'rating': formData['rating'],
-      'xCoord': location.longitude,
-      'yCoord': location.latitude,
-      'jwtToken': token
-    };
-
-    final result = await ApiService.addWaterFountain(fountainData);
-
-    if (result['success'] == true) {
-      _showStatus('Fountain added!', 'success');
-      addFountainMarker(result['fountain']);
-    } else {
-      _showStatus('Error: ${result['error']}', 'error');
-    }
-  }
 }
-<<<<<<< HEAD
-=======
-
->>>>>>> 8e17f069d076a1a8d428a3bacccaee81b7431bd0
 
 class AddFountainDialog extends StatefulWidget {
   final LatLng location;
@@ -442,11 +410,7 @@ class _AddFountainDialogState extends State<AddFountainDialog> {
       ],
     );
   }
-<<<<<<< HEAD
 }
-=======
-}
-
 
 class EditFountainDialog extends StatefulWidget {
   final Map<String, dynamic> initialData;
@@ -512,4 +476,3 @@ class _EditFountainDialogState extends State<EditFountainDialog> {
     );
   }
 }
->>>>>>> 8e17f069d076a1a8d428a3bacccaee81b7431bd0
