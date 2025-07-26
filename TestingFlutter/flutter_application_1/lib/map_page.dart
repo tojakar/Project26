@@ -108,32 +108,46 @@ class _MapPageState extends State<MapPage> {
   }
 
   void addFountainMarker(Map<String, dynamic> fountain) async {
-    final String fountainId = fountain['_id'] as String;
-    final double lat = (fountain['yCoord'] as num?)?.toDouble() ?? 0.0;
-    final double lng = (fountain['xCoord'] as num?)?.toDouble() ?? 0.0;
-    final String name = fountain['name'] as String? ?? 'Unknown';
-    final String description = fountain['description'] as String? ?? '';
-    final String createdBy = fountain['createdBy'] as String? ?? '';
-    final double filterLevel = (fountain['filterLevel'] as num?)?.toDouble() ?? 0.0;
-    final double rating     = (fountain['rating']      as num?)?.toDouble() ?? 0.0;
+  final fountainId  = fountain['_id'] as String;
+  final lat         = (fountain['yCoord']     as num?)?.toDouble() ?? 0.0;
+  final lng         = (fountain['xCoord']     as num?)?.toDouble() ?? 0.0;
+  final name        = fountain['name']         as String? ?? 'Unknown';
+  final description = fountain['description']  as String? ?? '';
+  final createdBy   = fountain['createdBy']    as String? ?? '';
+  double avgFilter   = (fountain['filterLevel'] as num?)?.toDouble() ?? 0.0;
+  double avgRating   = (fountain['rating']      as num?)?.toDouble() ?? 0.0;
 
-    final userData = await ApiService.getUserData();
-    final String? currentUserId = userData['userId'];
+  // Pull current userId + token once
+  final userData = await ApiService.getUserData();
+  final currentUserId = userData['userId'];
+  final token = await ApiService.getToken();
 
-    final marker = Marker(
-      key: ValueKey<String>(fountainId),
-      width: 40,
-      height: 40,
-      point: LatLng(lat, lng),
-      child: GestureDetector(
-        onTap: () {
-          double currentRating    = rating;
-          double currentFilterLvl = filterLevel;
 
-          showDialog(
-            context: navigatorKey.currentContext!,
-            builder: (_) => StatefulBuilder(
-              builder: (context, setState) => AlertDialog(
+  if (currentUserId == null || token == null) {
+    _showStatus('You must be logged in to interact with fountains', 'error');
+    return;
+  }
+   
+  // Load *this user’s* previous ratings (may be null)
+  double userFilter = await ApiService.getUserFilterForFountain(fountainId, token) ?? 0.0;
+  double userRating = await ApiService.getUserRatingForFountain(fountainId, token) ?? 0.0;
+
+  final marker = Marker(
+    key: ValueKey(fountainId),
+    width: 40,
+    height: 40,
+    point: LatLng(lat, lng),
+    child: GestureDetector(
+      onTap: () {
+      
+
+        showDialog(
+          context: navigatorKey.currentContext!,
+          builder: (dialogContext) => StatefulBuilder(
+            
+            builder: (ctx, setStateDialog) {
+              return AlertDialog(
+                scrollable: true,
                 title: Text(name),
                 content: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -142,28 +156,20 @@ class _MapPageState extends State<MapPage> {
                     Text(description),
                     const SizedBox(height: 12),
 
-                    // 🔹 Filter Level row
-                    Text('Filter Level: ${currentFilterLvl.toStringAsFixed(2)} / 3'),
+                    // ── Filter Level ───────────────────
+                    Text('Filter Level: ${avgFilter.toStringAsFixed(1)} / 3'),
                     Row(
                       children: List.generate(3, (i) {
                         final lvl = i + 1;
                         return GestureDetector(
                           onTap: () async {
-                            // cast int → double here
-                            setState(() => currentFilterLvl = lvl.toDouble());
-
-                            final token = await ApiService.getToken();
-                            if (token == null) {
-                              _showStatus('Please log in to rate fountains', 'error');
-                              return;
-                            }
+                            setStateDialog(() => userFilter = lvl.toDouble());
                             final resp = await ApiService.rateFilterLevel(
-                              fountainId, lvl, token
+                              fountainId, lvl, token!
                             );
-                            setState(() {
-                              // resp['averageFilterLevel'] is a num, cast to double
-                              currentFilterLvl = (resp['averageFilterLevel'] as num?)?.toDouble() 
-                                                  ?? lvl.toDouble();
+                            setStateDialog(() {
+                              avgFilter = (resp['averageFilterLevel'] as num?)
+                                  ?.toDouble() ?? userFilter;
                             });
                           },
                           child: Container(
@@ -171,7 +177,7 @@ class _MapPageState extends State<MapPage> {
                             padding: const EdgeInsets.all(6),
                             decoration: BoxDecoration(
                               border: Border.all(color: Colors.grey),
-                              color: lvl <= currentFilterLvl
+                              color: lvl <= userFilter
                                   ? Colors.blue.shade100
                                   : Colors.transparent,
                               borderRadius: BorderRadius.circular(4),
@@ -184,59 +190,51 @@ class _MapPageState extends State<MapPage> {
 
                     const SizedBox(height: 16),
 
-                    // 🔹 Star Rating bar
-                    Text('Rating: ${currentRating.toStringAsFixed(2)} / 5'),
+                    // ── Star Rating ─────────────────────
+                    Text('Rating: ${avgRating.toStringAsFixed(1)} / 5'),
                     RatingBar.builder(
-                      initialRating: currentRating,
+                      initialRating: userRating ?? 0,
                       minRating: 1,
                       itemCount: 5,
                       itemSize: 28,
-                      itemBuilder: (_, __) => const Icon(
-                        Icons.star,
-                        color: Colors.amber,
-                      ),
+                      itemBuilder: (_, __) =>
+                        const Icon(Icons.star, color: Colors.amber),
                       updateOnDrag: true,
                       onRatingUpdate: (newRating) async {
-                        setState(() => currentRating = newRating);
-
-                        final token = await ApiService.getToken();
-                        if (token == null) {
-                          _showStatus('Please log in to rate fountains', 'error');
-                          return;
-                        }
+                        setStateDialog(() => userRating = newRating);
                         final resp = await ApiService.rateWaterFountain(
-                          fountainId, newRating, token
+                          fountainId, newRating, token!
                         );
-                        setState(() {
-                          currentRating = (resp['averageRating'] as num?)?.toDouble() 
-                                          ?? newRating;
+                        setStateDialog(() {
+                          avgRating = (resp['averageRating'] as num?)
+                              ?.toDouble() ?? userRating;
                         });
                       },
                     ),
 
                     const SizedBox(height: 16),
 
-                    // 🔹 Edit / Delete buttons (only for owner)
+                    // ── Owner Actions ───────────────────
                     if (currentUserId == createdBy)
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           ElevatedButton.icon(
                             icon: const Icon(Icons.edit),
-                            label: const Text("Edit"),
+                            label: const Text('Edit'),
                             onPressed: () {
-                              Navigator.pop(context);
+                              Navigator.of(dialogContext).pop();
                               _editFountain(fountain);
                             },
                           ),
                           ElevatedButton.icon(
                             icon: const Icon(Icons.delete),
-                            label: const Text("Delete"),
+                            label: const Text('Delete'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.red,
                             ),
                             onPressed: () {
-                              Navigator.pop(context);
+                              Navigator.of(dialogContext).pop();
                               _deleteFountain(fountainId);
                             },
                           ),
@@ -244,18 +242,17 @@ class _MapPageState extends State<MapPage> {
                       ),
                   ],
                 ),
-              ),
-            ),
-          );
-        },
-        child: const Text('💧', style: TextStyle(fontSize: 24)),
-      ),
-    );
+              );
+            },
+          ),
+        );
+      },
+      child: const Icon(Icons.water_drop, size: 30, color: Colors.blue),
+    ),
+  );
 
-    setState(() {
-      _markers.add(marker);
-    });
-  }
+  setState(() => _markers.add(marker));
+}
 
   Future<bool> _handleLocationPermission() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
