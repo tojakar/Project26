@@ -49,11 +49,6 @@ const FilterLevelRating: React.FC<Props> = ({ userId, fountainId, jwtToken }) =>
 
         const data = response.data;
         // if your API returns a refreshed token:
-        if (data.jwtToken) {
-        const tok = typeof data.jwtToken === 'string'
-            ? data.jwtToken
-            : data.jwtToken.accessToken;
-        }
         if (data.error) {
         console.error('Rating error:', data.error);
         return;
