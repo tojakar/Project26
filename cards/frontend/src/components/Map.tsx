@@ -231,8 +231,8 @@ const Map: React.FC = () => {
           <div hidden>${fountain._id}</div>
           <h3 style="margin: 4px 0;">${fountain.name}</h3>
           <p style="margin: 2px 0;">${fountain.description}</p>
-          <p style="margin: 2px 0;">Filter Level: ${fountain.filterLevel}/3</p>
-          <p style="margin: 2px 0;">Rating: ${fountain.rating}/5 💧</p>
+          <p id="filter-static-${fountain._id}" style="margin: 2px 0;">Filter Level: ${fountain.filterLevel}/3</p>
+          <p id="rating-static-${fountain._id}" style="margin: 2px 0;">Rating: ${fountain.rating}/5 💧</p>
           <div id="filter-rating-${fountain._id}" style="margin-top: 6px;"></div>
           <div id="rating-${fountain._id}" style="margin-top: 6px;"></div>
           <div id="button-container-${fountain._id}" style="display: flex; justify-content: center; gap: 8px; margin-top: 8px;"></div>
@@ -273,9 +273,23 @@ const Map: React.FC = () => {
           />
         );
       }
-    
 
-      
+        const onFilterRated = (e: any) => {
+          if (e.detail.fountainId === fountain._id) {
+            const el = document.getElementById(`filter-static-${fountain._id}`);
+            if (el) el.innerText = `Filter Level: ${e.detail.newLevel}/3`;
+          }
+          };
+          const onStarRated = (e: any) => {
+            if (e.detail.fountainId === fountain._id) {
+              const el = document.getElementById(`rating-static-${fountain._id}`);
+              if (el) el.innerText = `Rating: ${e.detail.newRating}/5 💧`;
+            }
+          };
+          window.addEventListener('filterRated', onFilterRated);
+          window.addEventListener('starRated',   onStarRated);
+
+
 
       // ✏️ 🗑️ Buttons
       if (
@@ -332,7 +346,16 @@ const Map: React.FC = () => {
           if (!confirmDelete) return;
           await deleteWaterFountain(fountain._id, marker, setAllFountainMarkers);
         });
+        
+    
+
+       
+
     }
+     marker.on('popupclose', () => {
+          window.removeEventListener('filterRated', onFilterRated);
+          window.removeEventListener('starRated',   onStarRated);
+        });
   });
 
   return marker;
@@ -736,13 +759,29 @@ const Map: React.FC = () => {
         const successMessage = result.success || result.message || 'Fountain added successfully!';
         showStatus(successMessage, 'success');
 
-        // Add marker to map immediately
-        if (selectedLocation && map && window.L && result.addedWaterFountain) {
-          const newMarker = addFountainMarker(result.addedWaterFountain);
-          if (newMarker) {
-            setAllFountainMarkers(prev => [...prev, newMarker]);
-          }
+        
+      // Add marker to map immediately, but override the default 0/0
+      if (result.addedWaterFountain && map) {
+        // Copy the fountain object and inject the form values
+        const fountainWithInitialRatings = {
+          ...result.addedWaterFountain,
+          filterLevel: Number(formData.filterLevel),
+          rating:     Number(formData.rating)
+        };
+
+        // Create the marker
+        const newMarker = addFountainMarker(fountainWithInitialRatings);
+        if (newMarker) {
+          setAllFountainMarkers(prev => [...prev, newMarker]);
+          // Center and open popup so they see the values immediately
+          map.setView(
+            [fountainWithInitialRatings.yCoord, fountainWithInitialRatings.xCoord],
+            map.getZoom(),
+            { animate: true }
+          );
+          newMarker.openPopup();
         }
+      }
 
         // Reset form and close modal
         setFormData({ name: '', description: '', filterLevel: 1, rating: 5 });

@@ -22,7 +22,8 @@ const WaterFountainSchema = new Schema({
         type: Number,
         required: true,
         min: 0,
-        max: 3
+        max: 3,
+        default: 0
     },
     rating: {
         type: Number,

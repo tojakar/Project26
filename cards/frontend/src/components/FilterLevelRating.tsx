@@ -31,19 +31,48 @@ const FilterLevelRating: React.FC<Props> = ({ userId, fountainId, jwtToken }) =>
     fetchUserFilterLevel();
   }, [userId, fountainId, jwtToken]);
 
-  const handleClick = async (level: number) => {
-    setFilterLevel(level); // Optimistic UI update
+    const handleClick = async (level: number) => {
+    setFilterLevel(level); // optimistic UI
+
     try {
-      await axios.post(buildPath('api/rateFilterLevel'), {
+        const currentToken = jwtToken;  // if you’re refreshing tokens here
+
+        const response = await axios.post(buildPath('api/rateFilterLevel'), {
         userId,
         fountainId,
         filterLevel: level,
-        jwtToken,
-      });
+        jwtToken: currentToken,
+        }, {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 10000,
+        });
+
+        const data = response.data;
+        // if your API returns a refreshed token:
+        if (data.jwtToken) {
+        const tok = typeof data.jwtToken === 'string'
+            ? data.jwtToken
+            : data.jwtToken.accessToken;
+        }
+        if (data.error) {
+        console.error('Rating error:', data.error);
+        return;
+        }
+
+        window.dispatchEvent(new CustomEvent('filterRated', {
+        detail: {
+            fountainId,
+            newLevel: data.averageFilterLevel
+        }
+        }));
+
     } catch (err) {
-      console.error('Failed to rate filter level', err);
+        console.error('Failed to rate filter level', err);
+        // optionally rollback optimistic update: setFilterLevel(prev)…
     }
-  };
+    };
+
+  
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
