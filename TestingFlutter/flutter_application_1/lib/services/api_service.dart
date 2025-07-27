@@ -1,9 +1,10 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 import 'package:dart_jsonwebtoken/dart_jsonwebtoken.dart';
-
+import 'dart:developer' show log;
 class ApiService {
   static const String appName = 'group26.xyz';
   
@@ -339,4 +340,79 @@ static Future<Map<String, dynamic>> postJson(String url, Map<String, dynamic> bo
       return {'success': false, 'error': 'An error occurred while editing the fountain.'};
     }
   }
+
+   /// Rate filter level, returns { 'averageFilterLevel': double, … }
+static Future<Map<String, dynamic>> rateFilterLevel(
+  String fountainId,
+  int level,
+  String jwtToken,
+) async {
+  final userId = (await getUserData())['userId'];
+  log('rateFilterLevel → userId=$userId, fountainId=$fountainId, level=$level, jwtToken=$jwtToken');
+  final resp = await http.post(
+    Uri.parse(buildPath('api/rateFilterLevel')),
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({
+      'userId': userId,  // now non‑null?
+      'fountainId': fountainId,
+      'filterLevel': level,
+      'jwtToken': jwtToken,
+    }),
+  );
+  return jsonDecode(resp.body) as Map<String, dynamic>;
+}
+
+/// Rate water fountain, returns { 'averageRating': double, … }
+static Future<Map<String, dynamic>> rateWaterFountain(
+  String fountainId,
+  double rating,
+  String jwtToken,
+) async {
+  final userId = (await getUserData())['userId'];
+  log('rateWaterFountain → userId=$userId, fountainId=$fountainId, rating=$rating, jwtToken=$jwtToken');
+  final resp = await http.post(
+    Uri.parse(buildPath('api/rateWaterFountain')),
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({
+      'userId': userId,
+      'fountainId': fountainId,
+      'rating': rating,
+      'jwtToken': jwtToken,
+    }),
+  );
+  return jsonDecode(resp.body) as Map<String, dynamic>;
+}
+
+/// Get the *current user’s* star‐rating for this fountain (or null)
+static Future<double?> getUserRatingForFountain(String fountainId, String jwtToken) async {
+  final userId = (await getUserData())['userId'];
+  final resp = await http.post(
+    Uri.parse(buildPath('api/getUserRating')),
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({
+      'userId': userId,
+      'fountainId': fountainId,
+      'jwtToken': jwtToken,
+    }),
+  );
+  final map = jsonDecode(resp.body) as Map<String, dynamic>;
+  // returns null if user never rated before
+  return (map['rating'] as num?)?.toDouble();
+}
+
+/// Get the *current user’s* filter‐level for this fountain (or null)
+static Future<double?> getUserFilterForFountain(String fountainId, String jwtToken) async {
+  final userId = (await getUserData())['userId'];
+  final resp = await http.post(
+    Uri.parse(buildPath('api/getUserFilterLevel')),
+    headers: {'Content-Type': 'application/json'},
+    body: jsonEncode({
+      'userId': userId,
+      'fountainId': fountainId,
+      'jwtToken': jwtToken,
+    }),
+  );
+  final map = jsonDecode(resp.body) as Map<String, dynamic>;
+  return (map['filterLevel'] as num?)?.toDouble();
+}
 }

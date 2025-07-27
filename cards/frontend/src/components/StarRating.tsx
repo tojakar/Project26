@@ -66,7 +66,7 @@ const StarRating: React.FC<StarRatingProps> = ({ userId, fountainId, jwtToken })
     fetchRating();
   }, [userId, fountainId, jwtToken]);
 
-  const submitRating = async (newRating: number) => {
+ const submitRating = async (newRating: number) => {
     setRating(newRating);
 
     try {
@@ -96,7 +96,11 @@ const StarRating: React.FC<StarRatingProps> = ({ userId, fountainId, jwtToken })
         return;
       }
 
-      // Optional: show confirmation message if needed
+      // ★ Dispatch the update event so the map popup can update its static text:
+      window.dispatchEvent(new CustomEvent('starRated', {
+        detail: { fountainId, newRating: data.averageRating }
+      }));
+
     } catch (error: any) {
       if (axios.isAxiosError(error)) {
         console.error('Error submitting rating:', error.response?.data || error.message);
