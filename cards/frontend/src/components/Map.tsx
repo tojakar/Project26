@@ -231,10 +231,10 @@ const Map: React.FC = () => {
           <div hidden>${fountain._id}</div>
           <h3 style="margin: 4px 0;">${fountain.name}</h3>
           <p style="margin: 2px 0;">${fountain.description}</p>
-          <p id="filter-static-${fountain._id}" style="margin: 2px 0;">Filter Level: ${fountain.filterLevel}/3</p>
-          <p id="rating-static-${fountain._id}" style="margin: 2px 0;">Rating: ${fountain.rating}/5 💧</p>
-          <div id="filter-rating-${fountain._id}" style="margin-top: 6px;"></div>
-          <div id="rating-${fountain._id}" style="margin-top: 6px;"></div>
+          <p id="filter-static-${fountain._id}" style="margin: 2px 0;">Filter Level: ${fountain.filterLevel.toFixed(2)}/3</p>
+          <div id="filter-rating-${fountain._id}" style="margin-top: 2px; "></div>
+          <p id="rating-static-${fountain._id}" style="margin-top: 10px;">Rating: ${fountain.rating.toFixed(2)}/5 💧</p>
+          <div id="rating-${fountain._id}" style="margin-top: -22px;"></div>
           <div id="button-container-${fountain._id}" style="display: flex; justify-content: center; gap: 8px; margin-top: 8px;"></div>
         </div>
       `);
@@ -277,13 +277,13 @@ const Map: React.FC = () => {
         const onFilterRated = (e: any) => {
           if (e.detail.fountainId === fountain._id) {
             const el = document.getElementById(`filter-static-${fountain._id}`);
-            if (el) el.innerText = `Filter Level: ${e.detail.newLevel}/3`;
+            if (el) el.innerText = `Filter Level: ${e.detail.newLevel.toFixed(2)}/3`;
           }
           };
           const onStarRated = (e: any) => {
             if (e.detail.fountainId === fountain._id) {
               const el = document.getElementById(`rating-static-${fountain._id}`);
-              if (el) el.innerText = `Rating: ${e.detail.newRating}/5 💧`;
+              if (el) el.innerText = `Rating: ${e.detail.newRating.toFixed(2)}/5 💧`;
             }
           };
           window.addEventListener('filterRated', onFilterRated);
