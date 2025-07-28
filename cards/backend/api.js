@@ -645,7 +645,7 @@ exports.setApp = function (app, client) {
                 to: email,
                 from: sender,
                 subject: 'Password reset for Water Watch',
-                html:`<p>Hello ${user.firstName},</p><p>Please <a href="${passResetURL}>click here</a> to reset your password.</p>`
+                html:`<p>Hello ${user.firstName},</p><p>Please <a href="${passResetURL}">click here</a> to reset your password.</p>`
             };
 
             await sgMail.send(msg);
