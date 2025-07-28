@@ -638,8 +638,8 @@ exports.setApp = function (app, client) {
 
 
             const tokenModule = require("./createJWT.js");
-            const { passToken } = tokenModule.createToken(user.firstName, user.lastName, user._id);
-            const passResetURL = `http://group26.xyz/forgot-password?token=${passToken}&id=${user._id}`;
+            const { accessToken } = tokenModule.createToken(user.firstName, user.lastName, user._id);
+            const passResetURL = `http://group26.xyz/forgot-password?token=${accessToken}&id=${user._id}`;
 
             const msg = {
                 to: email,
