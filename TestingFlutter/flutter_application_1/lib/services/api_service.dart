@@ -34,6 +34,19 @@ static Future<Map<String, dynamic>> postJson(String url, Map<String, dynamic> bo
   }
 }
 
+static Future<Map<String, dynamic>> registerUser(String email, String password) async {
+    return await postJson(buildPath('register'), {'email': email, 'password': password});
+  }
+
+  static Future<Map<String, dynamic>> requestPasswordReset(String email) async {
+    return await postJson(buildPath('password/request-reset'), {'email': email});
+  }
+
+  static Future<Map<String, dynamic>> resetPassword(String token, String newPassword) async {
+    return await postJson(buildPath('password/reset'), {'token': token, 'password': newPassword});
+  }
+
+
   // Decode JWT token to extract user data
   static Map<String, dynamic>? decodeJWT(String token) {
     try {

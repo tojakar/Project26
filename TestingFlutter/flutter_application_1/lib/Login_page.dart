@@ -230,46 +230,61 @@ class _LoginPageState extends State<LoginPage> {
 
                   const SizedBox(height: 30),
 
-                  // Login Button
-                  SizedBox(
-                    width: 250,
-                    height: 45,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _handleLogin,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4A6FA5),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: _isLoading
-                          ? const CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            )
-                          : Text(
-                              'Login',
-                              style: GoogleFonts.poppins(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                    ),
-                  ),
+// Login Button
+SizedBox(
+  width: 250,
+  height: 45,
+  child: ElevatedButton(
+    onPressed: _isLoading ? null : _handleLogin,
+    style: ElevatedButton.styleFrom(
+      backgroundColor: const Color(0xFF4A6FA5),
+      foregroundColor: Colors.white,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+    ),
+    child: _isLoading
+        ? const CircularProgressIndicator(
+            color: Colors.white,
+            strokeWidth: 2,
+          )
+        : Text(
+            'Login',
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+  ),
+),
 
-                  const SizedBox(height: 40),
+const SizedBox(height: 10),
 
-                  // Sign up text
-                  Text(
-                    'Don\'t have an Account?',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      color: const Color(0xFF4A6FA5),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
+// Forgot Password Button
+TextButton(
+  onPressed: () => Navigator.pushNamed(context, '/password_reset'),
+  child: Text(
+    'Forgot Password?',
+    style: GoogleFonts.poppins(
+      fontSize: 14,
+      fontWeight: FontWeight.w500,
+      color: const Color(0xFF4A6FA5),
+    ),
+  ),
+),
+
+const SizedBox(height: 40),
+
+// Sign up text
+Text(
+  'Don\'t have an Account?',
+  style: GoogleFonts.poppins(
+    fontSize: 16,
+    color: const Color(0xFF4A6FA5),
+  ),
+  textAlign: TextAlign.center,
+),
                   
 
                   const SizedBox(height: 20),
