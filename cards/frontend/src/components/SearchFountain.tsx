@@ -132,7 +132,7 @@ const SearchFountain: React.FC<Props> = ({
   };
 
   return (
-    <div className="search-box">
+    <div className="search-box" >
       <input
         type="text"
         placeholder="Search fountains by name..."

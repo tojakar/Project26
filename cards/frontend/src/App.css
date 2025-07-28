@@ -93,6 +93,10 @@ body {
   color: #888;
 }
 
+.search-box {
+  position: relative;
+}
+
 /*everythiing below is for the map page */
 
 /* Main container */

@@ -629,7 +629,7 @@ exports.setApp = function (app, client) {
 
             res.status(200).json({ filterLevel, error, jwtToken: refreshedToken, });
             });
-    app.get('/api/passResetEmail', async(req, res) =>{
+    app.post('/api/passResetEmail', async(req, res) =>{
         const { email } = req.body;
         try {
             const user = await User.findOne({email: email});
@@ -639,7 +639,7 @@ exports.setApp = function (app, client) {
 
             const tokenModule = require("./createJWT.js");
             const { passToken } = tokenModule.createToken(user.firstName, user.lastName, user._id);
-            const passResetURL = `http://group26.xyz/passReset?token=${passToken}&id=${user._id}`;
+            const passResetURL = `http://group26.xyz/forgot-password?token=${passToken}&id=${user._id}`;
 
             const msg = {
                 to: email,
@@ -671,7 +671,7 @@ exports.setApp = function (app, client) {
         let decoded;
         try {
             decoded = jwt.verify(passToken, process.env.ACCESS_TOKEN_SECRET);
-            const user = await User.findById(id);
+            const user = await User.findById(decoded.id);
             if (!user)
             {
                 return res.status(404).json({error: "User not found"});

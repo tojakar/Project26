@@ -5,6 +5,7 @@ import CardPage from './pages/CardPage';
 import RegisterPage from './pages/RegisterPage'; 
 import MapPage from './pages/MapPage'; 
 import EmailVerificationPage from './pages/EmailVerificationPage';
+import PasswordReset from './components/PasswordReset';
 
 function App() {
   return (
@@ -15,7 +16,9 @@ function App() {
         <Route path="/map" element={<MapPage />} />
         <Route path="/cards" element={<CardPage />} />
         <Route path="/verify-email" element={<EmailVerificationPage />} />
+        <Route path="/forgot-password" element={<PasswordReset />} />
         <Route path="*" element={<Navigate to="/" />} />
+
       </Routes>
     </Router>
   );

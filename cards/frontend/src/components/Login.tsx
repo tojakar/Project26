@@ -15,7 +15,12 @@ function Login() {
   const doRegister = () => {
   navigate('/register');
   };
-  
+
+ const doForgotPassword = (): void => {
+  navigate('/forgot-password');
+};
+
+
 
 
   async function doLogin(event: any): Promise<void> {
@@ -82,7 +87,9 @@ function Login() {
       Password: <input type="password" id="loginPassword" placeholder="Password" onChange={handleSetPassword} />
       <br />
       <button type="button" id="loginButton" className="buttons" onClick={doLogin}>  Log In </button>
+      
       <button type="button" id="registerButton" className="buttons" onClick={doRegister}> No account? Register Here</button>
+      <span id="forgotPasswordLink" style={{cursor: 'pointer', textDecoration: 'underline', color: 'white'}}onClick={doForgotPassword}>Forgot Password?</span>
       <span id="loginResult">{message}</span>
     </div>
   </div>
