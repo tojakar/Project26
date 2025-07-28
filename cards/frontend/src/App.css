@@ -166,13 +166,13 @@ body {
 }
 
 .fountain-marker {
-  background-color: #fcf7ff !important;
-  border-radius: 75% !important;
-  border: 5px solid #fcf7ff !important;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2) !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
+  background-color: #fcf7ff;
+  border-radius: 75%;
+  border: 5px solid #fcf7ff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Map container */

@@ -511,17 +511,6 @@ const Map: React.FC = () => {
         // Add custom marker styles
         const style = document.createElement('style');
         style.textContent = `
-          .user-location-marker {
-            background: none !important;
-            border: none !important;
-            font-size: 24px;
-          }
-          .fountain-marker {
-            background: none !important;
-            border: none !important;
-            text-align: center;
-            font-size: 20px;
-          }
           .leaflet-control-zoom {
             border-radius: 8px !important;
           }
@@ -797,7 +786,7 @@ const Map: React.FC = () => {
           const fountainIcon = (window.L as any).divIcon({
             html: '💧',
             iconSize: [25, 25],
-            className: 'fountain-marker'
+            className: 'fountain-marker',
           });
 
           const marker = (window.L as any).marker([selectedLocation.lat, selectedLocation.lng], {
