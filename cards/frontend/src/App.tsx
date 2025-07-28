@@ -2,9 +2,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import './App.css';
 import LoginPage from './pages/LoginPage';
 import CardPage from './pages/CardPage';
-import RegisterPage from './pages/RegisterPage.tsx'; 
-import MapPage from './pages/MapPage.tsx'; 
-import EmailVerificationPage from './pages/EmailVerificationPage.tsx';
+import RegisterPage from './pages/RegisterPage'; 
+import MapPage from './pages/MapPage'; 
+import EmailVerificationPage from './pages/EmailVerificationPage';
 
 function App() {
   return (
