@@ -1,5 +1,5 @@
-import PageTitle from '../components/PageTitle.tsx';
-import RegisterUser from '../components/RegisterUser.tsx';
+import PageTitle from '../components/PageTitle';
+import RegisterUser from '../components/RegisterUser';
 
 const RegisterPage = () =>
 {

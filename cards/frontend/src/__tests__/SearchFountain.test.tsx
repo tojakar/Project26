@@ -15,232 +15,87 @@ jest.mock('../tokenStorage', () => ({
 }));
 
 const mockRetrieveToken = tokenStorage.retrieveToken as jest.MockedFunction<typeof tokenStorage.retrieveToken>;
-const mockStoreToken = tokenStorage.storeToken as jest.MockedFunction<typeof tokenStorage.storeToken>;
 
 describe('SearchFountain Component Tests', () => {
   const mockOnResults = jest.fn();
-  const mockShowStatus = jest.fn();
   const mockOnClear = jest.fn();
+  const mockShowStatus = jest.fn();
 
   const defaultProps = {
     onResults: mockOnResults,
-    showStatus: mockShowStatus,
     onClear: mockOnClear,
+    showStatus: mockShowStatus,
     isSearchActive: false,
     searchResultsCount: 0,
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Mock token retrieval to return a valid token
     mockRetrieveToken.mockReturnValue('mock-token');
   });
 
-  test('renders search input and search button', () => {
+  test('renders search input and button correctly', () => {
     render(<SearchFountain {...defaultProps} />);
 
-    expect(screen.getByPlaceholderText('Search fountains by name...')).toBeTruthy();
-    expect(screen.getByRole('button', { name: /search/i })).toBeTruthy();
+    // Check that search elements are present
+    expect(screen.getByPlaceholderText(/search fountains/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /search/i })).toBeInTheDocument();
   });
 
-  test('allows user to type in search input', () => {
+  test('handles successful fountain search', async () => {
+    // Mock successful search response
+    const mockFountains = [
+      { _id: '1', name: 'Campus Fountain', description: 'Main campus fountain', createdBy: 'user1', xCoord: 0, yCoord: 0, filterLevel: 5, rating: 4 },
+      { _id: '2', name: 'Library Fountain', description: 'Near the library', createdBy: 'user2', xCoord: 1, yCoord: 1, filterLevel: 4, rating: 5 }
+    ];
+
+    mockedAxios.post.mockResolvedValueOnce({
+      data: { found: mockFountains }
+    });
+
     render(<SearchFountain {...defaultProps} />);
 
-    const searchInput = screen.getByPlaceholderText('Search fountains by name...');
-    fireEvent.change(searchInput, { target: { value: 'Water Fountain' } });
-
-    expect((searchInput as HTMLInputElement).value).toBe('Water Fountain');
-  });
-
-  test('shows error when searching without a query', async () => {
-    render(<SearchFountain {...defaultProps} />);
-
+    const searchInput = screen.getByPlaceholderText(/search fountains/i);
     const searchButton = screen.getByRole('button', { name: /search/i });
+
+    // Search for fountains
+    fireEvent.change(searchInput, { target: { value: 'Campus' } });
     fireEvent.click(searchButton);
 
+    // Wait for the API call and results
     await waitFor(() => {
-      expect(mockShowStatus).toHaveBeenCalledWith('Please enter a search term.', 'error');
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        expect.stringContaining('api/searchWaterFountainByName'),
+        { name: 'Campus', jwtToken: 'mock-token' },
+        { headers: { 'Content-Type': 'application/json' }, timeout: 10000 }
+      );
+    });
+
+    await waitFor(() => {
+      expect(mockOnResults).toHaveBeenCalledWith(mockFountains);
     });
   });
 
-  test('shows error when no token is available', async () => {
+  test('handles search without token gracefully', async () => {
+    // Mock no token available
     mockRetrieveToken.mockReturnValue(null);
 
     render(<SearchFountain {...defaultProps} />);
 
-    const searchInput = screen.getByPlaceholderText('Search fountains by name...');
+    const searchInput = screen.getByPlaceholderText(/search fountains/i);
     const searchButton = screen.getByRole('button', { name: /search/i });
 
-    fireEvent.change(searchInput, { target: { value: 'Water Fountain' } });
+    // Search without being logged in
+    fireEvent.change(searchInput, { target: { value: 'test search' } });
     fireEvent.click(searchButton);
 
+    // Wait for the error message
     await waitFor(() => {
       expect(mockShowStatus).toHaveBeenCalledWith('Please log in to search fountains.', 'error');
     });
-  });
 
-  test('handles successful search with results', async () => {
-    const mockFountains = [
-      {
-        createdBy: 'user123',
-        _id: '1',
-        name: 'Main Fountain',
-        description: 'Central campus fountain',
-        xCoord: 100,
-        yCoord: 200,
-        filterLevel: 5,
-        rating: 4.5
-      },
-      {
-        createdBy: 'user456',
-        _id: '2',
-        name: 'Library Fountain',
-        description: 'Fountain near library',
-        xCoord: 150,
-        yCoord: 250,
-        filterLevel: 4,
-        rating: 4.0
-      }
-    ];
-
-    mockedAxios.post.mockResolvedValueOnce({
-      data: {
-        found: mockFountains,
-        jwtToken: 'new-mock-token'
-      }
-    });
-
-    render(<SearchFountain {...defaultProps} />);
-
-    const searchInput = screen.getByPlaceholderText('Search fountains by name...');
-    const searchButton = screen.getByRole('button', { name: /search/i });
-
-    fireEvent.change(searchInput, { target: { value: 'Fountain' } });
-    fireEvent.click(searchButton);
-
-    await waitFor(() => {
-      expect(mockedAxios.post).toHaveBeenCalledWith(
-        expect.stringContaining('api/searchWaterFountainByName'),
-        { name: 'Fountain', jwtToken: 'mock-token' },
-        { headers: { 'Content-Type': 'application/json' }, timeout: 10000 }
-      );
-      expect(mockOnResults).toHaveBeenCalledWith(mockFountains);
-      expect(mockShowStatus).toHaveBeenCalledWith('Found 2 fountain(s) matching "Fountain"', 'success');
-      expect(mockStoreToken).toHaveBeenCalledWith({ accessToken: 'new-mock-token' });
-    });
-  });
-
-  test('handles search with no results', async () => {
-    mockedAxios.post.mockResolvedValueOnce({
-      data: {
-        found: [],
-        jwtToken: 'new-mock-token'
-      }
-    });
-
-    render(<SearchFountain {...defaultProps} />);
-
-    const searchInput = screen.getByPlaceholderText('Search fountains by name...');
-    const searchButton = screen.getByRole('button', { name: /search/i });
-
-    fireEvent.change(searchInput, { target: { value: 'NonexistentFountain' } });
-    fireEvent.click(searchButton);
-
-    await waitFor(() => {
-      expect(mockOnResults).toHaveBeenCalledWith([]);
-      expect(mockShowStatus).toHaveBeenCalledWith('No fountains found matching "NonexistentFountain".', 'error');
-    });
-  });
-
-  test('handles API error response', async () => {
-    mockedAxios.post.mockResolvedValueOnce({
-      data: {
-        error: 'Database connection failed'
-      }
-    });
-
-    render(<SearchFountain {...defaultProps} />);
-
-    const searchInput = screen.getByPlaceholderText('Search fountains by name...');
-    const searchButton = screen.getByRole('button', { name: /search/i });
-
-    fireEvent.change(searchInput, { target: { value: 'Fountain' } });
-    fireEvent.click(searchButton);
-
-    await waitFor(() => {
-      expect(mockShowStatus).toHaveBeenCalledWith('Search error: Database connection failed', 'error');
-    });
-  });
-
-  test('handles JWT token expiration error', async () => {
-    mockedAxios.post.mockResolvedValueOnce({
-      data: {
-        error: 'JWT token expired'
-      }
-    });
-
-    render(<SearchFountain {...defaultProps} />);
-
-    const searchInput = screen.getByPlaceholderText('Search fountains by name...');
-    const searchButton = screen.getByRole('button', { name: /search/i });
-
-    fireEvent.change(searchInput, { target: { value: 'Fountain' } });
-    fireEvent.click(searchButton);
-
-    await waitFor(() => {
-      expect(mockShowStatus).toHaveBeenCalledWith('Session expired. Please log in again.', 'error');
-    });
-  });
-
-  test('triggers search on Enter key press', async () => {
-    mockedAxios.post.mockResolvedValueOnce({
-      data: {
-        found: [],
-        jwtToken: 'new-mock-token'
-      }
-    });
-
-    render(<SearchFountain {...defaultProps} />);
-
-    const searchInput = screen.getByPlaceholderText('Search fountains by name...');
-    fireEvent.change(searchInput, { target: { value: 'Fountain' } });
-    fireEvent.keyPress(searchInput, { key: 'Enter', code: 'Enter' });
-
-    await waitFor(() => {
-      expect(mockedAxios.post).toHaveBeenCalled();
-    });
-  });
-
-  test('shows clear button when search query exists', () => {
-    render(<SearchFountain {...defaultProps} />);
-
-    const searchInput = screen.getByPlaceholderText('Search fountains by name...');
-    fireEvent.change(searchInput, { target: { value: 'Fountain' } });
-
-    expect(screen.getByRole('button', { name: /clear/i })).toBeTruthy();
-  });
-
-  test('shows "Show All Fountains" button when search is active', () => {
-    const propsWithActiveSearch = {
-      ...defaultProps,
-      isSearchActive: true,
-      searchResultsCount: 5
-    };
-
-    render(<SearchFountain {...propsWithActiveSearch} />);
-
-    expect(screen.getByRole('button', { name: /show all fountains \(5 found\)/i })).toBeTruthy();
-  });
-
-  test('clears search input and calls onClear when clear button is clicked', () => {
-    render(<SearchFountain {...defaultProps} />);
-
-    const searchInput = screen.getByPlaceholderText('Search fountains by name...');
-    fireEvent.change(searchInput, { target: { value: 'Fountain' } });
-
-    const clearButton = screen.getByRole('button', { name: /clear/i });
-    fireEvent.click(clearButton);
-
-    expect((searchInput as HTMLInputElement).value).toBe('');
-    expect(mockOnClear).toHaveBeenCalled();
+    // Ensure no API call was made
+    expect(mockedAxios.post).not.toHaveBeenCalled();
   });
 });

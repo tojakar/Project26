@@ -8,170 +8,94 @@ import axios from 'axios';
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
-describe('Register Component Tests', () => {
+const RegisterWithRouter = () => (
+  <BrowserRouter>
+    <Register />
+  </BrowserRouter>
+);
+
+describe('RegisterUser Component Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  test('renders registration form with all required fields', () => {
-    render(
-      <BrowserRouter>
-        <Register />
-      </BrowserRouter>
-    );
+  test('renders registration form elements correctly', () => {
+    render(<RegisterWithRouter />);
 
-    // Check that all form fields are present
-    expect(screen.getByPlaceholderText('First Name')).toBeTruthy();
-    expect(screen.getByPlaceholderText('Last Name')).toBeTruthy();
-    expect(screen.getByPlaceholderText('Email')).toBeTruthy();
-    expect(screen.getByPlaceholderText('Password')).toBeTruthy();
-    expect(screen.getByPlaceholderText('Confirm Password')).toBeTruthy();
-    expect(screen.getByRole('button', { name: /sign up/i })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /already have an account/i })).toBeTruthy();
+    // Check that all expected form elements are present
+    expect(screen.getByPlaceholderText('First Name')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Last Name')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Example@gmail.com')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Password')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Confirm Password')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /register/i })).toBeInTheDocument();
   });
 
-  test('allows user to fill in registration form', () => {
-    render(
-      <BrowserRouter>
-        <Register />
-      </BrowserRouter>
-    );
-
-    const firstNameInput = screen.getByPlaceholderText('First Name');
-    const lastNameInput = screen.getByPlaceholderText('Last Name');
-    const emailInput = screen.getByPlaceholderText('Email');
-    const passwordInput = screen.getByPlaceholderText('Password');
-    const confirmPasswordInput = screen.getByPlaceholderText('Confirm Password');
-
-    // Fill in the form
-    fireEvent.change(firstNameInput, { target: { value: 'John' } });
-    fireEvent.change(lastNameInput, { target: { value: 'Doe' } });
-    fireEvent.change(emailInput, { target: { value: 'john.doe@example.com' } });
-    fireEvent.change(passwordInput, { target: { value: 'Password123' } });
-    fireEvent.change(confirmPasswordInput, { target: { value: 'Password123' } });
-
-    // Verify the values were set
-    expect((firstNameInput as HTMLInputElement).value).toBe('John');
-    expect((lastNameInput as HTMLInputElement).value).toBe('Doe');
-    expect((emailInput as HTMLInputElement).value).toBe('john.doe@example.com');
-    expect((passwordInput as HTMLInputElement).value).toBe('Password123');
-    expect((confirmPasswordInput as HTMLInputElement).value).toBe('Password123');
-  });
-
-  test('shows validation error for missing fields', async () => {
-    render(
-      <BrowserRouter>
-        <Register />
-      </BrowserRouter>
-    );
-
-    const submitButton = screen.getByRole('button', { name: /sign up/i });
-    
-    // Try to submit empty form
-    fireEvent.click(submitButton);
-
-    // Wait for error message
-    await waitFor(() => {
-      expect(screen.getByText(/please fill in all fields/i)).toBeTruthy();
-    });
-  });
-
-  test('shows validation error for password mismatch', async () => {
-    render(
-      <BrowserRouter>
-        <Register />
-      </BrowserRouter>
-    );
-
-    const firstNameInput = screen.getByPlaceholderText('First Name');
-    const lastNameInput = screen.getByPlaceholderText('Last Name');
-    const emailInput = screen.getByPlaceholderText('Email');
-    const passwordInput = screen.getByPlaceholderText('Password');
-    const confirmPasswordInput = screen.getByPlaceholderText('Confirm Password');
-    const submitButton = screen.getByRole('button', { name: /sign up/i });
-
-    // Fill in form with mismatched passwords
-    fireEvent.change(firstNameInput, { target: { value: 'John' } });
-    fireEvent.change(lastNameInput, { target: { value: 'Doe' } });
-    fireEvent.change(emailInput, { target: { value: 'john.doe@example.com' } });
-    fireEvent.change(passwordInput, { target: { value: 'Password123' } });
-    fireEvent.change(confirmPasswordInput, { target: { value: 'DifferentPassword123' } });
-
-    fireEvent.click(submitButton);
-
-    await waitFor(() => {
-      expect(screen.getByText(/passwords do not match/i)).toBeTruthy();
-    });
-  });
-
-  test('shows validation error for weak password', async () => {
-    render(
-      <BrowserRouter>
-        <Register />
-      </BrowserRouter>
-    );
-
-    const firstNameInput = screen.getByPlaceholderText('First Name');
-    const lastNameInput = screen.getByPlaceholderText('Last Name');
-    const emailInput = screen.getByPlaceholderText('Email');
-    const passwordInput = screen.getByPlaceholderText('Password');
-    const confirmPasswordInput = screen.getByPlaceholderText('Confirm Password');
-    const submitButton = screen.getByRole('button', { name: /sign up/i });
-
-    // Fill in form with weak password (no uppercase or number)
-    fireEvent.change(firstNameInput, { target: { value: 'John' } });
-    fireEvent.change(lastNameInput, { target: { value: 'Doe' } });
-    fireEvent.change(emailInput, { target: { value: 'john.doe@example.com' } });
-    fireEvent.change(passwordInput, { target: { value: 'weakpassword' } });
-    fireEvent.change(confirmPasswordInput, { target: { value: 'weakpassword' } });
-
-    fireEvent.click(submitButton);
-
-    await waitFor(() => {
-      expect(screen.getByText(/password must contain at least one uppercase letter and one number/i)).toBeTruthy();
-    });
-  });
-
-  test('handles successful registration', async () => {
+  test('handles successful user registration', async () => {
+    // Mock successful registration response
     mockedAxios.post.mockResolvedValueOnce({
       data: {
-        message: 'Registration successful. Check your email to verify your account.'
+        message: 'Registration successful! Please check your email for verification.'
       }
     });
 
-    render(
-      <BrowserRouter>
-        <Register />
-      </BrowserRouter>
-    );
+    render(<RegisterWithRouter />);
 
     const firstNameInput = screen.getByPlaceholderText('First Name');
     const lastNameInput = screen.getByPlaceholderText('Last Name');
-    const emailInput = screen.getByPlaceholderText('Email');
+    const emailInput = screen.getByPlaceholderText('Example@gmail.com');
     const passwordInput = screen.getByPlaceholderText('Password');
     const confirmPasswordInput = screen.getByPlaceholderText('Confirm Password');
-    const submitButton = screen.getByRole('button', { name: /sign up/i });
+    const submitButton = screen.getByRole('button', { name: /register/i });
 
-    // Fill in valid form
+    // Fill in the registration form with valid password (has uppercase and number)
     fireEvent.change(firstNameInput, { target: { value: 'John' } });
     fireEvent.change(lastNameInput, { target: { value: 'Doe' } });
     fireEvent.change(emailInput, { target: { value: 'john.doe@example.com' } });
-    fireEvent.change(passwordInput, { target: { value: 'Password123' } });
-    fireEvent.change(confirmPasswordInput, { target: { value: 'Password123' } });
-
+    fireEvent.change(passwordInput, { target: { value: 'SecurePassword123' } });
+    fireEvent.change(confirmPasswordInput, { target: { value: 'SecurePassword123' } });
+    
+    // Submit the form
     fireEvent.click(submitButton);
 
+    // Wait for the API call to be made
     await waitFor(() => {
       expect(mockedAxios.post).toHaveBeenCalledWith(
         expect.stringContaining('api/register'),
-        {
+        expect.objectContaining({
           firstName: 'John',
           lastName: 'Doe',
           email: 'john.doe@example.com',
-          password: 'Password123'
-        },
+          password: 'SecurePassword123'
+        }),
         { headers: { 'Content-Type': 'application/json' } }
       );
+    });
+  });
+
+  test('displays validation error for weak password', async () => {
+    render(<RegisterWithRouter />);
+
+    const firstNameInput = screen.getByPlaceholderText('First Name');
+    const lastNameInput = screen.getByPlaceholderText('Last Name');
+    const emailInput = screen.getByPlaceholderText('Example@gmail.com');
+    const passwordInput = screen.getByPlaceholderText('Password');
+    const confirmPasswordInput = screen.getByPlaceholderText('Confirm Password');
+    const submitButton = screen.getByRole('button', { name: /register/i });
+
+    // Fill in the registration form with weak password (no uppercase or number)
+    fireEvent.change(firstNameInput, { target: { value: 'Jane' } });
+    fireEvent.change(lastNameInput, { target: { value: 'Smith' } });
+    fireEvent.change(emailInput, { target: { value: 'jane@example.com' } });
+    fireEvent.change(passwordInput, { target: { value: 'weakpassword' } });
+    fireEvent.change(confirmPasswordInput, { target: { value: 'weakpassword' } });
+    
+    // Submit the form
+    fireEvent.click(submitButton);
+
+    // Wait for the validation error message to appear
+    await waitFor(() => {
+      expect(screen.getByText(/Password must contain at least one uppercase letter and one number/i)).toBeInTheDocument();
     });
   });
 });

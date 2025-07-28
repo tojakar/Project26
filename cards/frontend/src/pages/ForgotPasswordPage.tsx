@@ -1,5 +1,5 @@
-import PageTitle from '../components/PageTitle.tsx';
-import ForgotPassword from '../components/EmailVerification.tsx';
+import PageTitle from '../components/PageTitle';
+import ForgotPassword from '../components/EmailVerification';
 
 const ForgotPasswordPage = () => {
   return (
