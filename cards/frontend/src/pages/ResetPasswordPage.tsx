@@ -1,5 +1,5 @@
-import PageTitle from '../components/PageTitle.tsx';
-import ResetPassword from '../components/EmailVerification.tsx';
+import PageTitle from '../components/PageTitle';
+import ResetPassword from '../components/EmailVerification';
 
 const ResetPasswordPage = () => {
   return (

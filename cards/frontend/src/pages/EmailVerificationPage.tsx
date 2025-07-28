@@ -1,5 +1,5 @@
-import PageTitle from '../components/PageTitle.tsx';
-import EmailVerification from '../components/EmailVerification.tsx';
+import PageTitle from '../components/PageTitle';
+import EmailVerification from '../components/EmailVerification';
 
 const EmailVerificationPage = () =>
 {

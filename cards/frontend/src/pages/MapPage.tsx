@@ -1,5 +1,5 @@
-import Map from '../components/Map.tsx';
-import PageTitle from '../components/PageTitle.tsx'
+import Map from '../components/Map';
+import PageTitle from '../components/PageTitle'
 //import StarRating from '../components/StarRating';
 
 

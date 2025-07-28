@@ -629,6 +629,64 @@ exports.setApp = function (app, client) {
 
             res.status(200).json({ filterLevel, error, jwtToken: refreshedToken, });
             });
+    app.post('/api/passResetEmail', async(req, res) =>{
+        const { email } = req.body;
+        try {
+            const user = await User.findOne({email: email});
+            if (!user)
+            {return res.status(404).json({error: "User with this email not found"});}
+
+
+            const tokenModule = require("./createJWT.js");
+            const { accessToken } = tokenModule.createToken(user.firstName, user.lastName, user._id);
+            const passResetURL = `http://group26.xyz/forgot-password?token=${accessToken}&id=${user._id}`;
+
+            const msg = {
+                to: email,
+                from: sender,
+                subject: 'Password reset for Water Watch',
+                html:`<p>Hello ${user.firstName},</p><p>Please <a href="${passResetURL}">click here</a> to reset your password.</p>`
+            };
+
+            await sgMail.send(msg);
+
+            return res.status(200).json({message: 'Please check your email for the password reset email.'});
+
+        } catch (err){
+            console.error(err);
+            return res.status(500).json({error: err.message});
+        }
+    });
+    app.post('/api/passReset', async (req, res) =>{
+        const {token: passToken, newPassword} = req.body;
+        if (!passToken||!newPassword)
+        {
+            return res.status(400).json({error: "Missing required fields"});
+        }
+        if (token.isExpired(passToken))
+        {
+            return res.status(400).send("Token expired.");
+        }
+        const jwt = require("jsonwebtoken");
+        let decoded;
+        try {
+            decoded = jwt.verify(passToken, process.env.ACCESS_TOKEN_SECRET);
+            const user = await User.findById(decoded.userId);
+            if (!user)
+            {
+                return res.status(404).json({error: "User not found"});
+            }
+
+            const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+            user.password = hashedPassword;
+            await user.save();
+
+            return res.status(200).json({message: "Password reset successful"});
+        } catch (err){
+            console.error(err);
+            return res.status(400).json({error: err.message});
+        }
+    });
 }
 
 
