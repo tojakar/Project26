@@ -671,7 +671,7 @@ exports.setApp = function (app, client) {
         let decoded;
         try {
             decoded = jwt.verify(passToken, process.env.ACCESS_TOKEN_SECRET);
-            const user = await User.findById(decoded.id);
+            const user = await User.findById(decoded.userId);
             if (!user)
             {
                 return res.status(404).json({error: "User not found"});
