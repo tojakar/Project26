@@ -35,7 +35,35 @@ static Future<Map<String, dynamic>> postJson(String url, Map<String, dynamic> bo
 }
 
   static Future<Map<String, dynamic>> requestPasswordReset(String email) async {
-    return await postJson(buildPath('api/passResetEmail'), {'email': email});
+    try {
+      final response = await http.post(
+        Uri.parse(buildPath('api/passResetEmail')),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'email': email,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+      print('Password reset request response: ${response.statusCode}, body: $data'); // Debug print
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true, 
+          'message': data['message'] ?? 'Password reset email sent successfully. Please check your email.'
+        };
+      } else {
+        return {
+          'success': false,
+          'error': data['error'] ?? data['message'] ?? 'Failed to send password reset email'
+        };
+      }
+    } catch (e) {
+      print('Password reset request error: $e');
+      return {'success': false, 'error': 'Network error occurred while requesting password reset.'};
+    }
   }
 
   static Future<Map<String, dynamic>> resetPassword(String token, String newPassword) async {
@@ -134,9 +162,10 @@ static Future<Map<String, dynamic>> postJson(String url, Map<String, dynamic> bo
     );
 
     final data = jsonDecode(response.body);
+    print('Registration response: ${response.statusCode}, body: $data'); // Debug print
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return {'success': true, 'message': data['message'] ?? 'Please check your email to verify your account.'};
+      return {'success': true, 'message': data['message'] ?? 'Registration successful. Please check your email to verify your account.'};
     } else {
       return {
         'success': false,

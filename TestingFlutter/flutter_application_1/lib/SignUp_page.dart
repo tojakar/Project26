@@ -69,10 +69,14 @@ class _SignUpPageState extends State<SignUpPage> {
       
       if (result['success'] == true) {
         setState(() => _errorMessage = '');
-        // Navigate to login page
+        // Show success message and navigate to login page
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Please check your email to verify your account.')),
+            SnackBar(
+              content: Text(result['message'] ?? 'Registration successful! Please check your email to verify your account.'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 5),
+            ),
           );
           Navigator.pushReplacement(
             context,
