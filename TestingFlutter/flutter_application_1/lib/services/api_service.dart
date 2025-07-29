@@ -34,12 +34,8 @@ static Future<Map<String, dynamic>> postJson(String url, Map<String, dynamic> bo
   }
 }
 
-static Future<Map<String, dynamic>> registerUser(String email, String password) async {
-    return await postJson(buildPath('register'), {'email': email, 'password': password});
-  }
-
   static Future<Map<String, dynamic>> requestPasswordReset(String email) async {
-    return await postJson(buildPath('password/request-reset'), {'email': email});
+    return await postJson(buildPath('api/passResetEmail'), {'email': email});
   }
 
   static Future<Map<String, dynamic>> resetPassword(String token, String newPassword) async {
@@ -118,36 +114,40 @@ static Future<Map<String, dynamic>> registerUser(String email, String password) 
 
   // Register user
   static Future<Map<String, dynamic>> register({
-    required String firstName,
-    required String lastName,
-    required String email,
-    required String password,
-  }) async {
-    try {
-      final response = await http.post(
-        Uri.parse(buildPath('api/register')),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode({
-          'firstName': firstName,
-          'lastName': lastName,
-          'email': email,
-          'password': password,
-        }),
-      );
-      
-      if (response.statusCode == 201) {
-        return {'success': true};
-      } else {
-        final data = jsonDecode(response.body);
-        return {'success': false, 'error': data['error'] ?? 'Unknown registration error'};
-      }
-    } catch (e) {
-      print('Registration error: $e');
-      return {'success': false, 'error': 'An error occurred during registration.'};
+  required String firstName,
+  required String lastName,
+  required String email,
+  required String password,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse(buildPath('api/register')),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'firstName': firstName,
+        'lastName': lastName,
+        'email': email,
+        'password': password,
+      }),
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return {'success': true, 'message': data['message'] ?? 'Please check your email to verify your account.'};
+    } else {
+      return {
+        'success': false,
+        'error': data['error'] ?? data['message'] ?? 'Unknown registration error'
+      };
     }
+  } catch (e) {
+    print('Registration error: $e');
+    return {'success': false, 'error': 'An error occurred during registration.'};
   }
+}
 
   // Add a new water fountain
   static Future<Map<String, dynamic>> addWaterFountain(Map<String, dynamic> fountainData) async {

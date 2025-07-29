@@ -72,7 +72,7 @@ class _SignUpPageState extends State<SignUpPage> {
         // Navigate to login page
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Account created successfully! Please log in.')),
+            const SnackBar(content: Text('Please check your email to verify your account.')),
           );
           Navigator.pushReplacement(
             context,
@@ -80,7 +80,7 @@ class _SignUpPageState extends State<SignUpPage> {
           );
         }
       } else {
-        setState(() => _errorMessage = result['message'] ?? 'Registration failed');
+        setState(() => _errorMessage = result['error'] ?? result['message'] ?? 'Registration failed');
       }
     } catch (e) {
       print('Signup error: $e'); // Debug print

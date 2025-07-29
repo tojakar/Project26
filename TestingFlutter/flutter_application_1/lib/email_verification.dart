@@ -8,14 +8,23 @@ class EmailVerificationPage extends StatefulWidget {
 }
 
 class _EmailVerificationPageState extends State<EmailVerificationPage> {
+  final TextEditingController firstNameController = TextEditingController();
+  final TextEditingController lastNameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
 
   String message = "";
 
   void register() async {
-    final res = await ApiService.registerUser(emailController.text, passwordController.text);
-    setState(() => message = res['message'] ?? "Check your email for verification.");
+    final res = await ApiService.register(
+      firstName: firstNameController.text,
+      lastName: lastNameController.text,
+      email: emailController.text,
+      password: passwordController.text,
+    );
+    setState(() => message = res['success'] == true
+        ? "Registration successful. Please check your email to verify."
+        : res['error'] ?? "Registration failed.");
   }
 
   @override
@@ -26,10 +35,13 @@ class _EmailVerificationPageState extends State<EmailVerificationPage> {
         padding: EdgeInsets.all(16),
         child: Column(
           children: [
+            TextField(controller: firstNameController, decoration: InputDecoration(labelText: "First Name")),
+            TextField(controller: lastNameController, decoration: InputDecoration(labelText: "Last Name")),
             TextField(controller: emailController, decoration: InputDecoration(labelText: "Email")),
             TextField(controller: passwordController, obscureText: true, decoration: InputDecoration(labelText: "Password")),
             ElevatedButton(onPressed: register, child: Text("Register")),
-            Text(message)
+            SizedBox(height: 8),
+            Text(message),
           ],
         ),
       ),

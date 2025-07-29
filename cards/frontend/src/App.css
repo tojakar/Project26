@@ -1,20 +1,21 @@
+/* --- Desktop Default Styles --- */
+
 #root {
-  
   margin: 0 auto;
   padding: 2rem;
 }
 
 #Nav {
-  Color: #4a6fa5;
+  color: #4a6fa5;
   margin-right: 5em;
 }
+
 #title {
   color: #4a6fa5;
   font-family: 'poppins', sans-serif;
 }
 
 #ButtonDiv {
-  
   background-color: #4a6fa5;
   padding: 20px;
   border-radius: 8px;
@@ -25,10 +26,11 @@
 }
 
 .background-container {
-  background-image: url('./assets/Campus.jpg');
+  max-width: 1400px;
   width: 1200px;
-  height:70vh;
+  height: 70vh;
   border-radius: 20px;
+  background-image: url('./assets/Campus.jpg');
   background-position: center;
   background-repeat: no-repeat;
   background-attachment: fixed;
@@ -36,9 +38,9 @@
   align-items: center;
   justify-content: center;
   margin-top: 12vh;
+  margin-left: auto;
+  margin-right: auto;
 }
-
-
 
 .form {
   background-color: rgba(255, 255, 255, 0.9);
@@ -54,7 +56,7 @@ body {
   font-family: 'poppins', sans-serif;
 }
 
-.Campus{
+.Campus {
   height: 6em;
   padding: 1.5em;
 }
@@ -63,9 +65,11 @@ body {
   height: 6em;
   padding: 1.5em;
 }
+
 .logo:hover {
   filter: drop-shadow(0 0 2em #646cffaa);
 }
+
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
@@ -97,11 +101,8 @@ body {
   position: relative;
 }
 
-/*everythiing below is for the map page */
+/* Map page styles */
 
-/* Main container */
-
-/* Header */
 .map-header {
   position: relative;
   padding-top: 90px;
@@ -122,7 +123,7 @@ body {
   display: flex;
   justify-content: center;
   gap: 16px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   margin: 25px;
 }
 
@@ -175,7 +176,6 @@ body {
   justify-content: center;
 }
 
-/* Map container */
 .map-container {
   position: relative;
   height: 600px;
@@ -198,7 +198,6 @@ body {
   z-index: 1000;
 }
 
-/* Modal overlay */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -213,7 +212,6 @@ body {
   backdrop-filter: blur(4px);
 }
 
-/* Modal content */
 .modal-content {
   background: #4a6fa5;
   border-radius: 24px;
@@ -232,7 +230,6 @@ body {
   margin-top: 0;
 }
 
-/* Form styles */
 .form-group {
   margin-bottom: 16px;
 }
@@ -245,6 +242,8 @@ body {
   margin-bottom: 8px;
 }
 
+/* INPUT BOXES: fixed width 320px desktop, full width mobile */
+
 .form-input {
   width: 100%;
   padding: 12px 16px;
@@ -255,41 +254,23 @@ body {
   box-sizing: border-box;
 }
 
-.form-input:focus {
-  outline: none;
-  border-color: #3b82f6;
-}
-
-.form-textarea {
-  width: 100%;
-  padding: 12px 16px;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  font-size: 14px;
-  transition: border-color 0.2s ease;
-  resize: vertical;
-  font-family: inherit;
-  box-sizing: border-box;
-}
-
+.form-input:focus,
 .form-textarea:focus {
   outline: none;
   border-color: #3b82f6;
 }
 
-.location-info {
-  font-size: 0.875rem;
-  color: #fcf7ff;
-  margin-bottom: 16px;
+.form-textarea {
+  resize: vertical;
 }
 
+.location-info,
 .location-info-last {
   font-size: 0.875rem;
   color: #fcf7ff;
   margin-bottom: 16px;
 }
 
-/* Button styles */
 .button-group {
   display: flex;
   gap: 16px;
@@ -312,7 +293,6 @@ body {
   background: #63ccca;
 }
 
-/* Status messages */
 .status-message {
   position: fixed;
   top: 24px;
@@ -334,34 +314,85 @@ body {
   background: #ef4444;
 }
 
-/* Responsive design */
+/* --- Mobile Overrides --- */
 @media (max-width: 768px) {
-  .map-header {
-    padding: 16px;
+
+  #root {
+  margin: 0 auto;
+  padding: 0rem;
   }
-  
-  .map-title {
-    font-size: 1.5rem;
+
+.logo {
+  display: block;
+  margin: 0;
+  padding: 1rem 0 1rem 1rem;
+  height: 4em;
+}
+
+#Nav {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+  .background-container {
+    width: 100vw;
+    height: 65vh;
+    margin: 0;
+    padding: 0;
+    border-radius: 0;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: scroll;
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
-  
+
+  .form {
+    background-color: rgba(255, 255, 255, 0.95);
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 400px;
+    box-sizing: border-box;
+  }
+
   .button-container {
     flex-direction: column;
     align-items: center;
+    gap: 12px;
+    margin: 25px 0;
   }
-  
+
   .header-button {
     width: 100%;
     max-width: 300px;
   }
-  
+
+  .map-header {
+    padding-top: 16px;
+  }
+
+  .map-title {
+    font-size: 1.5rem;
+  }
+
   .modal-content {
     margin: 16px;
     padding: 24px;
   }
-  
+
   .status-message {
     right: 16px;
     left: 16px;
     max-width: none;
+  }
+
+  .form-input,
+  .form-textarea {
+    width: 100%;
   }
 }

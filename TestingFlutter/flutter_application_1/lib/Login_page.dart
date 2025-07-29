@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'SignUp_page.dart';
 import 'services/api_service.dart';
 import 'map_page.dart';
+import 'forgot_password.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -263,7 +264,12 @@ const SizedBox(height: 10),
 
 // Forgot Password Button
 TextButton(
-  onPressed: () => Navigator.pushNamed(context, '/password_reset'),
+  onPressed: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => ForgotPasswordPage()),
+    );
+  },
   child: Text(
     'Forgot Password?',
     style: GoogleFonts.poppins(

@@ -1,5 +1,5 @@
 :root {
-  font-family: 'poppins', sans-serif;
+  font-family: 'Poppins', sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
@@ -28,6 +28,24 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  padding: 2em;
+  box-sizing: border-box;
+  justify-content: center;
+}
+
+.container {
+  max-width: 800px;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 1em;
+  padding: 2em;
+  box-sizing: border-box;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
 }
 
 input {
@@ -42,8 +60,10 @@ h1 {
   font-size: 2.6em;
   line-height: 1.1;
   color: #4a6fa5;
+  margin: 0 0 1em 0;
+  text-align: center;
+  width: 100%;
 }
-
 
 button {
   border-radius: 35px;
@@ -61,10 +81,31 @@ button {
 }
 button:hover {
   background-color: #fcf7ff;
-  color:#4a6fa5;
+  color: #4a6fa5;
 }
 button:focus,
 button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
+/* Make layout vertical on mobile only */
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 1em;
+  }
+
+  h1 {
+    font-size: 2em;
+  }
+
+  input, button {
+    width: 100%;
+    font-size: 1.1em;
+  }
+
+  button {
+    margin-top: 1em;
+  }
+}
